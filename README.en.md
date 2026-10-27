@@ -4,7 +4,10 @@
 
 Two applications for CachyOS/Arch that replace the Windows-only **Zebra Setup Utilities** and
 **ZebraDesigner 3**. Written in Python + PyQt6. They talk to the printer directly over ZPL/SGD, so no
-driver is needed. The user interface is in Turkish.
+driver is needed.
+
+The user interface is available in **English** and **Turkish**. The language follows the system locale
+and can be changed from the **Language / Dil** menu (the application restarts).
 
 ## Installation
 
@@ -52,12 +55,12 @@ CUPS queues with a `socket://` URI are automatically turned into direct network 
 - Text can use the printer's built-in font (Zebra 0) or any system font. System fonts are sent as
   graphics, so what you see on screen is what gets printed, including non-ASCII characters.
 - Rotation (0/90/180/270), paragraphs (automatic word wrap, alignment), reverse print.
-- **Variable printing:** put fields such as `{AD}` or `{FIYAT}` in text or barcode data; they are filled
-  in by hand, from a CSV file or by a counter (`{SAYAC}`) when printing. Built-in fields: `{TARIH}`,
-  `{SAAT}`, `{DATE}`, `{TIME}`.
+- **Variable printing:** put fields such as `{NAME}` or `{PRICE}` in text or barcode data; they are filled
+  in by hand, from a CSV file or by a counter (`{COUNTER}`) when printing. Built-in fields: `{DATE}`,
+  `{TIME}` (Turkish aliases `{SAYAC}`, `{TARIH}`, `{SAAT}` also work).
 - Undo/redo, copy/paste, alignment, bring to front / send to back.
 - Save format is `.zlbl` (JSON). Export to ZPL and PNG; press F5 to see the ZPL code.
-- In the label settings, “Yazıcıdan al” (read from printer) reads the label size from the printer.
+- In the label settings, “Read from printer” reads the label size from the printer.
 
 ### Shortcuts
 `T` text · `B` barcode · `Q` QR · `R` box · `L` line · `E` ellipse · `I` image ·

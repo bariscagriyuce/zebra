@@ -15,11 +15,12 @@ from PyQt6.QtWidgets import QGraphicsItem, QStyle
 
 from .. import zpl as Z
 from . import barcodes as B
+from ..i18n import tr
 
 ZEBRA0 = "ZEBRA0"
 ROT_CODES = {0: "N", 90: "R", 180: "I", 270: "B"}
 ROTATIONS = [("0°", 0), ("90°", 90), ("180°", 180), ("270°", 270)]
-ALIGNS = [("Sol", "L"), ("Orta", "C"), ("Sağ", "R"), ("İki yana", "J")]
+ALIGNS = [(tr('Sol'), "L"), (tr('Orta'), "C"), (tr('Sağ'), "R"), (tr('İki yana'), "J")]
 
 _zebra_family = None
 
@@ -59,7 +60,7 @@ class ZplContext:
 
 class LabelItem(QGraphicsItem):
     TYPE = "base"
-    TITLE = "Öğe"
+    TITLE = tr('Öğe')
     DEFAULTS = {}
     ROTATABLE = False
     RESIZABLE = False
@@ -89,14 +90,14 @@ class LabelItem(QGraphicsItem):
 
     def fields(self):
         """Özellik paneli alanları: (anahtar, etiket, tür, ek)."""
-        base = [("x", "X (nokta)", "int", (-5000, 20000)),
-                ("y", "Y (nokta)", "int", (-5000, 20000))]
+        base = [("x", tr('X (nokta)'), "int", (-5000, 20000)),
+                ("y", tr('Y (nokta)'), "int", (-5000, 20000))]
         if self.ROTATABLE:
-            base.append(("rotation", "Döndürme", "choice", ROTATIONS))
+            base.append(("rotation", tr('Döndürme'), "choice", ROTATIONS))
         return base
 
     def tail_fields(self):
-        return [("locked", "Kilitli (taşınamaz)", "bool", None)]
+        return [("locked", tr('Kilitli (taşınamaz)'), "bool", None)]
 
     def set_prop(self, key, value):
         self.prepareGeometryChange()
@@ -277,25 +278,25 @@ class LabelItem(QGraphicsItem):
 
 class TextItem(LabelItem):
     TYPE = "text"
-    TITLE = "Metin"
+    TITLE = tr('Metin')
     ROTATABLE = True
-    DEFAULTS = {"text": "Metin", "font": ZEBRA0, "height": 40, "width": 0, "bold": False, "italic": False,
+    DEFAULTS = {"text": tr('Metin'), "font": ZEBRA0, "height": 40, "width": 0, "bold": False, "italic": False,
                 "block_width": 0, "align": "L", "reverse": False}
     SCALE_KEYS = ("height", "width", "block_width")
     REBUILD_KEYS = ("font",)
 
     def fields(self):
         f = super().fields() + [
-            ("text", "Metin  ({DEĞİŞKEN} kullanılabilir)", "text", None),
+            ("text", tr('Metin  ({DEĞİŞKEN} kullanılabilir)'), "text", None),
             ("font", "Font", "font", None),
-            ("height", "Yükseklik (nokta)", "int", (4, 2000)),
-            ("width", "Genişlik (0 = orantılı)", "int", (0, 2000)),
+            ("height", tr('Yükseklik (nokta)'), "int", (4, 2000)),
+            ("width", tr('Genişlik (0 = orantılı)'), "int", (0, 2000)),
         ]
         if self.p["font"] != ZEBRA0:
-            f += [("bold", "Kalın", "bool", None), ("italic", "İtalik", "bool", None)]
-        f += [("block_width", "Paragraf genişliği (0 = yok)", "int", (0, 20000)),
-              ("align", "Hizalama", "choice", ALIGNS),
-              ("reverse", "Ters baskı (beyaz yazı)", "bool", None)]
+            f += [("bold", tr('Kalın'), "bool", None), ("italic", tr('İtalik'), "bool", None)]
+        f += [("block_width", tr('Paragraf genişliği (0 = yok)'), "int", (0, 20000)),
+              ("align", tr('Hizalama'), "choice", ALIGNS),
+              ("reverse", tr('Ters baskı (beyaz yazı)'), "bool", None)]
         return f + self.tail_fields()
 
     def _qfont(self):
@@ -415,7 +416,7 @@ class TextItem(LabelItem):
 
 class BarcodeItem(LabelItem):
     TYPE = "barcode"
-    TITLE = "Barkod"
+    TITLE = tr('Barkod')
     ROTATABLE = True
     DEFAULTS = {"symbology": "code128", "data": "123456789012", "module": 2, "height": 80, "hr": True,
                 "ratio": 3.0, "ecc": "M", "columns": 0}
@@ -426,21 +427,21 @@ class BarcodeItem(LabelItem):
         sym = self.p["symbology"]
         is2d = B.SYMBOLOGIES[sym][2]
         f = super().fields() + [
-            ("symbology", "Tür", "choice", [(v[0], k) for k, v in B.SYMBOLOGIES.items()]),
-            ("data", "Veri  ({DEĞİŞKEN} kullanılabilir)", "str", None),
-            ("module", "Büyütme (nokta)" if sym in ("qr",) else "Modül genişliği (nokta)", "int", (1, 10 if sym == "qr" else 30)),
+            ("symbology", tr('Tür'), "choice", [(v[0], k) for k, v in B.SYMBOLOGIES.items()]),
+            ("data", tr('Veri  ({DEĞİŞKEN} kullanılabilir)'), "str", None),
+            ("module", tr('Büyütme (nokta)') if sym in ("qr",) else tr('Modül genişliği (nokta)'), "int", (1, 10 if sym == "qr" else 30)),
         ]
         if not is2d:
-            f += [("height", "Yükseklik (nokta)", "int", (1, 2000)),
-                  ("hr", "Altına okunur metin yaz", "bool", None)]
+            f += [("height", tr('Yükseklik (nokta)'), "int", (1, 2000)),
+                  ("hr", tr('Altına okunur metin yaz'), "bool", None)]
             if sym in ("code39", "i2of5"):
-                f += [("ratio", "Kalın/ince oranı", "float", (2.0, 3.0))]
+                f += [("ratio", tr('Kalın/ince oranı'), "float", (2.0, 3.0))]
         if sym == "qr":
             f = [x for x in f if x[0] != "rotation"]   # ^BQ döndürülemez
-            f += [("ecc", "Hata düzeltme", "choice", B.QR_ECC)]
+            f += [("ecc", tr('Hata düzeltme'), "choice", B.QR_ECC)]
         if sym == "pdf417":
-            f += [("height", "Satır yüksekliği (nokta)", "int", (1, 255)),
-                  ("columns", "Sütun (0 = otomatik)", "int", (0, 30))]
+            f += [("height", tr('Satır yüksekliği (nokta)'), "int", (1, 255)),
+                  ("columns", tr('Sütun (0 = otomatik)'), "int", (0, 30))]
         return f + self.tail_fields()
 
     def set_prop(self, key, value):
@@ -492,7 +493,7 @@ class BarcodeItem(LabelItem):
     def paint_content(self, painter, w, h, ctx=None):
         mat = self._matrix(ctx)
         if mat is None:
-            self.paint_error(painter, w, h, self._error or "Barkod hatası")
+            self.paint_error(painter, w, h, self._error or tr('Barkod hatası'))
             return
         m = int(self.p["module"])
         sym = self.p["symbology"]
@@ -541,23 +542,23 @@ class BarcodeItem(LabelItem):
 
 # ============================================================================ Şekiller
 
-COLORS = [("Siyah", "B"), ("Beyaz", "W")]
+COLORS = [(tr('Siyah'), "B"), (tr('Beyaz'), "W")]
 
 
 class BoxItem(LabelItem):
     TYPE = "box"
-    TITLE = "Kutu"
+    TITLE = tr('Kutu')
     RESIZABLE = True
     DEFAULTS = {"w": 200, "h": 100, "thickness": 3, "rounding": 0, "color": "B"}
     SCALE_KEYS = ("w", "h", "thickness")
 
     def fields(self):
         return super().fields() + [
-            ("w", "Genişlik (nokta)", "int", (1, 20000)),
-            ("h", "Yükseklik (nokta)", "int", (1, 20000)),
-            ("thickness", "Kalınlık (nokta)", "int", (1, 20000)),
-            ("rounding", "Köşe yuvarlama (0-8)", "int", (0, 8)),
-            ("color", "Renk", "choice", COLORS),
+            ("w", tr('Genişlik (nokta)'), "int", (1, 20000)),
+            ("h", tr('Yükseklik (nokta)'), "int", (1, 20000)),
+            ("thickness", tr('Kalınlık (nokta)'), "int", (1, 20000)),
+            ("rounding", tr('Köşe yuvarlama (0-8)'), "int", (0, 8)),
+            ("color", tr('Renk'), "choice", COLORS),
         ] + self.tail_fields()
 
     def content_size(self, ctx=None):
@@ -595,24 +596,24 @@ class BoxItem(LabelItem):
                 f"{self.p['color']},{int(self.p['rounding'])}^FS")
 
 
-LINE_DIRS = [("Yatay", "H"), ("Dikey", "V"), ("Çapraz ╲", "L"), ("Çapraz ╱", "R")]
+LINE_DIRS = [(tr('Yatay'), "H"), (tr('Dikey'), "V"), (tr('Çapraz ╲'), "L"), (tr('Çapraz ╱'), "R")]
 
 
 class LineItem(LabelItem):
     TYPE = "line"
-    TITLE = "Çizgi"
+    TITLE = tr('Çizgi')
     RESIZABLE = True
     DEFAULTS = {"w": 300, "h": 100, "thickness": 3, "direction": "H", "color": "B"}
     SCALE_KEYS = ("w", "h", "thickness")
 
     def fields(self):
         d = self.p["direction"]
-        f = super().fields() + [("direction", "Yön", "choice", LINE_DIRS)]
+        f = super().fields() + [("direction", tr('Yön'), "choice", LINE_DIRS)]
         if d in ("H", "L", "R"):
-            f.append(("w", "Uzunluk / genişlik (nokta)", "int", (1, 20000)))
+            f.append(("w", tr('Uzunluk / genişlik (nokta)'), "int", (1, 20000)))
         if d in ("V", "L", "R"):
-            f.append(("h", "Yükseklik (nokta)", "int", (1, 20000)))
-        f += [("thickness", "Kalınlık (nokta)", "int", (1, 500)), ("color", "Renk", "choice", COLORS)]
+            f.append(("h", tr('Yükseklik (nokta)'), "int", (1, 20000)))
+        f += [("thickness", tr('Kalınlık (nokta)'), "int", (1, 500)), ("color", tr('Renk'), "choice", COLORS)]
         return f + self.tail_fields()
 
     REBUILD_KEYS = ("direction",)
@@ -660,17 +661,17 @@ class LineItem(LabelItem):
 
 class EllipseItem(LabelItem):
     TYPE = "ellipse"
-    TITLE = "Elips"
+    TITLE = tr('Elips')
     RESIZABLE = True
     DEFAULTS = {"w": 150, "h": 100, "thickness": 3, "color": "B"}
     SCALE_KEYS = ("w", "h", "thickness")
 
     def fields(self):
         return super().fields() + [
-            ("w", "Genişlik (nokta)", "int", (3, 4095)),
-            ("h", "Yükseklik (nokta)", "int", (3, 4095)),
-            ("thickness", "Kalınlık (nokta)", "int", (1, 4095)),
-            ("color", "Renk", "choice", COLORS),
+            ("w", tr('Genişlik (nokta)'), "int", (3, 4095)),
+            ("h", tr('Yükseklik (nokta)'), "int", (3, 4095)),
+            ("thickness", tr('Kalınlık (nokta)'), "int", (1, 4095)),
+            ("color", tr('Renk'), "choice", COLORS),
         ] + self.tail_fields()
 
     def content_size(self, ctx=None):
@@ -703,7 +704,7 @@ class EllipseItem(LabelItem):
 
 class ImageItem(LabelItem):
     TYPE = "image"
-    TITLE = "Resim"
+    TITLE = tr('Resim')
     ROTATABLE = True
     RESIZABLE = True
     DEFAULTS = {"png": "", "w": 200, "h": 200, "threshold": 128, "dither": True, "keep_aspect": True}
@@ -719,7 +720,7 @@ class ImageItem(LabelItem):
     def from_file(path, dpi=203):
         img = QImage(path)
         if img.isNull():
-            raise ValueError("Resim açılamadı")
+            raise ValueError(tr('Resim açılamadı'))
         # varsayılan boyut: en fazla ~40 mm
         maxd = int(40 / 25.4 * dpi)
         w, h = img.width(), img.height()
@@ -745,12 +746,12 @@ class ImageItem(LabelItem):
 
     def fields(self):
         return super().fields() + [
-            ("png", "Resim dosyası", "image", None),
-            ("w", "Genişlik (nokta)", "int", (1, 20000)),
-            ("h", "Yükseklik (nokta)", "int", (1, 20000)),
-            ("keep_aspect", "En-boy oranını koru", "bool", None),
-            ("threshold", "Eşik (0-255)", "int", (1, 254)),
-            ("dither", "Titreme (gri tonlar için)", "bool", None),
+            ("png", tr('Resim dosyası'), "image", None),
+            ("w", tr('Genişlik (nokta)'), "int", (1, 20000)),
+            ("h", tr('Yükseklik (nokta)'), "int", (1, 20000)),
+            ("keep_aspect", tr('En-boy oranını koru'), "bool", None),
+            ("threshold", tr('Eşik (0-255)'), "int", (1, 254)),
+            ("dither", tr('Titreme (gri tonlar için)'), "bool", None),
         ] + self.tail_fields()
 
     def set_prop(self, key, value):
@@ -799,7 +800,7 @@ class ImageItem(LabelItem):
     def paint_content(self, painter, w, h, ctx=None):
         m = self.mono()
         if m is None:
-            self.paint_error(painter, w, h, "Resim yok")
+            self.paint_error(painter, w, h, tr('Resim yok'))
             return
         painter.drawImage(QRectF(0, 0, w, h), m)
 
@@ -853,5 +854,5 @@ ITEM_TYPES = {cls.TYPE: cls for cls in (TextItem, BarcodeItem, BoxItem, LineItem
 def item_from_dict(d):
     cls = ITEM_TYPES.get(d.get("type"))
     if not cls:
-        raise ValueError(f"Bilinmeyen öğe türü: {d.get('type')}")
+        raise ValueError(tr('Bilinmeyen öğe türü: {0}').format(d.get('type')))
     return cls(d)

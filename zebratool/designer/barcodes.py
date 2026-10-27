@@ -5,6 +5,7 @@ import shutil
 import subprocess
 
 from PyQt6.QtGui import QImage
+from ..i18n import tr
 
 ZINT = shutil.which("zint")
 
@@ -37,9 +38,9 @@ def matrix(sym: str, data: str, ecc: str = "M", columns: int = 0):
     Doğrusal barkodlarda tek satır döner.
     """
     if not ZINT:
-        raise BarcodeError("zint bulunamadı (sudo pacman -S zint)")
+        raise BarcodeError(tr('zint bulunamadı (sudo pacman -S zint)'))
     if not data:
-        raise BarcodeError("Veri boş")
+        raise BarcodeError(tr('Veri boş'))
     _, ztype, is2d = SYMBOLOGIES[sym]
     args = [ZINT, "-b", ztype, "-d", data, "--notext", "--scale=0.5",
             "--direct", "--filetype=png", "--whitesp=0", "--vwhitesp=0"]
@@ -54,10 +55,10 @@ def matrix(sym: str, data: str, ecc: str = "M", columns: int = 0):
     except (OSError, subprocess.SubprocessError) as e:
         raise BarcodeError(str(e)) from e
     if r.returncode not in (0, 2):  # 2 = uyarı
-        raise BarcodeError(r.stderr.decode("utf-8", "replace").strip() or "zint hatası")
+        raise BarcodeError(r.stderr.decode("utf-8", "replace").strip() or tr('zint hatası'))
     img = QImage.fromData(r.stdout)
     if img.isNull():
-        raise BarcodeError("zint çıktısı okunamadı")
+        raise BarcodeError(tr('zint çıktısı okunamadı'))
     img = img.convertToFormat(QImage.Format.Format_Grayscale8)
     rows = []
     for y in range(img.height()):

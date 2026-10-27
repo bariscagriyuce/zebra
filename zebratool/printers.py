@@ -11,6 +11,7 @@ import subprocess
 from urllib.parse import urlparse
 
 from .connection import PrinterConfig, make_connection, NetworkConnection, UsbConnection
+from .i18n import tr
 
 CONFIG_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "zebratool")
 PRINTERS_FILE = os.path.join(CONFIG_DIR, "printers.json")
@@ -114,9 +115,9 @@ def dpi_from_config(cfg):
     return None
 
 
-PRINT_MODES = {"0": "Geri sarma", "1": "Soyma (Peel-off)", "2": "Yırtma (Tear-off)",
-               "3": "Kesici (Cutter)", "4": "Aplikatör", "5": "Gecikmeli kesici",
-               "6": "Astarsız soyma", "7": "Astarsız geri sarma", "8": "Kısmi kesici",
+PRINT_MODES = {"0": tr('Geri sarma'), "1": tr('Soyma (Peel-off)'), "2": tr('Yırtma (Tear-off)'),
+               "3": tr('Kesici (Cutter)'), "4": tr('Aplikatör'), "5": tr('Gecikmeli kesici'),
+               "6": tr('Astarsız soyma'), "7": tr('Astarsız geri sarma'), "8": tr('Kısmi kesici'),
                "9": "RFID", "K": "Kiosk"}
 
 
@@ -125,7 +126,7 @@ def host_status(conn):
     raw = conn.query("~HS", timeout=2.5, until=lambda b: b.count(b"\x03") >= 3)
     lines = re.findall(rb"\x02(.*?)\x03", raw, re.S)
     if len(lines) < 2:
-        raise ValueError(f"Beklenmeyen ~HS yanıtı: {raw!r}")
+        raise ValueError(tr('Beklenmeyen ~HS yanıtı: {0!r}').format(raw))
     a = lines[0].decode("latin-1").split(",")
     b = lines[1].decode("latin-1").split(",")
     st = {
@@ -152,21 +153,21 @@ def host_status(conn):
 def status_summary(st):
     problems = []
     if st["head_open"]:
-        problems.append("Kafa açık")
+        problems.append(tr('Kafa açık'))
     if st["paper_out"]:
-        problems.append("Etiket bitti")
+        problems.append(tr('Etiket bitti'))
     if st["ribbon_out"]:
-        problems.append("Ribon bitti")
+        problems.append(tr('Ribon bitti'))
     if st["paused"]:
-        problems.append("Duraklatıldı")
+        problems.append(tr('Duraklatıldı'))
     if st["buffer_full"]:
-        problems.append("Arabellek dolu")
+        problems.append(tr('Arabellek dolu'))
     if st["over_temp"]:
-        problems.append("Kafa aşırı sıcak")
+        problems.append(tr('Kafa aşırı sıcak'))
     if st["under_temp"]:
-        problems.append("Kafa soğuk")
+        problems.append(tr('Kafa soğuk'))
     if st["corrupt_ram"]:
-        problems.append("RAM bozuk")
+        problems.append(tr('RAM bozuk'))
     return problems
 
 

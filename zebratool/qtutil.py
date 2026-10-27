@@ -1,12 +1,17 @@
 """Qt yardımcıları: arka planda iş çalıştırma, ortak diyaloglar."""
 
+import os
+import sys
 import traceback
 
-from PyQt6.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
+from PyQt6.QtCore import QObject, QRunnable, QThreadPool, QProcess, pyqtSignal
+from PyQt6.QtGui import QAction, QActionGroup
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QComboBox,
                              QSpinBox, QMessageBox, QHBoxLayout, QPushButton, QFileDialog, QWidget)
 
 from .connection import PrinterConfig
+from . import i18n
+from .i18n import tr
 
 
 class _Signals(QObject):
@@ -61,13 +66,13 @@ class PrinterDialog(QDialog):
 
     def __init__(self, parent=None, cfg: PrinterConfig = None):
         super().__init__(parent)
-        self.setWindowTitle("Yazıcı" if cfg else "Yazıcı ekle")
+        self.setWindowTitle(tr('Yazıcı') if cfg else tr('Yazıcı ekle'))
         lay = QFormLayout(self)
         self.name = QLineEdit(cfg.name if cfg else "Zebra")
         self.kind = QComboBox()
-        self.kind.addItem("Ağ (TCP/IP, port 9100)", "network")
-        self.kind.addItem("USB (/dev/usb/lpN)", "usb")
-        self.kind.addItem("CUPS kuyruğu (yalnızca gönderim)", "cups")
+        self.kind.addItem(tr('Ağ (TCP/IP, port 9100)'), "network")
+        self.kind.addItem(tr('USB (/dev/usb/lpN)'), "usb")
+        self.kind.addItem(tr('CUPS kuyruğu (yalnızca gönderim)'), "cups")
         self.address = QLineEdit(cfg.address if cfg else "")
         self.port = QSpinBox()
         self.port.setRange(1, 65535)
@@ -78,11 +83,11 @@ class PrinterDialog(QDialog):
         if cfg:
             self.kind.setCurrentIndex(max(0, self.kind.findData(cfg.kind)))
             self.dpi.setCurrentIndex(max(0, self.dpi.findData(cfg.dpi)))
-        lay.addRow("Ad:", self.name)
-        lay.addRow("Bağlantı:", self.kind)
-        lay.addRow("Adres:", self.address)
-        lay.addRow("Port:", self.port)
-        lay.addRow("Çözünürlük:", self.dpi)
+        lay.addRow(tr('Ad:'), self.name)
+        lay.addRow(tr('Bağlantı:'), self.kind)
+        lay.addRow(tr('Adres:'), self.address)
+        lay.addRow(tr('Port:'), self.port)
+        lay.addRow(tr('Çözünürlük:'), self.dpi)
         self.kind.currentIndexChanged.connect(self._kind_changed)
         self._kind_changed()
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -95,11 +100,11 @@ class PrinterDialog(QDialog):
         self.port.setEnabled(k == "network")
         self.address.setPlaceholderText({"network": "192.168.1.50",
                                          "usb": "/dev/usb/lp0",
-                                         "cups": "kuyruk adı (lpstat -v)"}[k])
+                                         "cups": tr('kuyruk adı (lpstat -v)')}[k])
 
     def _accept(self):
         if not self.address.text().strip():
-            QMessageBox.warning(self, "Eksik", "Adres boş olamaz.")
+            QMessageBox.warning(self, tr('Eksik'), tr('Adres boş olamaz.'))
             return
         self.accept()
 
@@ -116,12 +121,12 @@ def error_box(parent, title, msg):
 
 
 class FilePicker(QWidget):
-    def __init__(self, caption="Dosya seç", filt="Tüm dosyalar (*)", parent=None):
+    def __init__(self, caption=tr('Dosya seç'), filt=tr('Tüm dosyalar (*)'), parent=None):
         super().__init__(parent)
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         self.edit = QLineEdit()
-        btn = QPushButton("Gözat…")
+        btn = QPushButton(tr('Gözat…'))
         lay.addWidget(self.edit, 1)
         lay.addWidget(btn)
         btn.clicked.connect(lambda: self._browse(caption, filt))
@@ -133,3 +138,30 @@ class FilePicker(QWidget):
 
     def path(self):
         return self.edit.text().strip()
+
+
+def add_language_menu(win, menubar, module, extra_args=lambda: []):
+    """Dil menüsü. Seçim kaydedilir; uygulama isteğe bağlı olarak yeniden başlatılır."""
+    m = menubar.addMenu(tr("Dil / Language"))
+    grp = QActionGroup(win)
+    for code, name in i18n.LANGUAGES.items():
+        a = QAction(name, win, checkable=True)
+        a.setChecked(code == i18n.LANG)
+        a.triggered.connect(lambda checked=False, c=code: _switch_language(win, c, module, extra_args))
+        grp.addAction(a)
+        m.addAction(a)
+    return m
+
+
+def _switch_language(win, code, module, extra_args):
+    if code == i18n.LANG:
+        return
+    i18n.set_language(code)
+    msg = i18n.EN["Dil değiştirildi. Uygulama şimdi yeniden başlatılsın mı?"] if code == "en" else \
+        "Dil değiştirildi. Uygulama şimdi yeniden başlatılsın mı?"
+    if QMessageBox.question(win, "Dil / Language", msg) != QMessageBox.StandardButton.Yes:
+        return
+    args = ["-m", module] + list(extra_args())
+    if win.close():
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        QProcess.startDetached(sys.executable, args, root)

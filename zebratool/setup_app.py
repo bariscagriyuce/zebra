@@ -15,7 +15,8 @@ from PyQt6.QtWidgets import (
 
 from . import printers as P
 from .connection import PrinterConfig, make_connection
-from .qtutil import run_async, PrinterDialog, FilePicker, error_box
+from .qtutil import run_async, PrinterDialog, FilePicker, error_box, add_language_menu
+from .i18n import tr
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ICON_PATH = os.path.join(APP_DIR, "icons", "zebra-setup.svg")
@@ -34,35 +35,35 @@ def _num(s):
 
 # --- Yeniden kullanılabilir ayar eşlemeleri ---------------------------------
 
-SPEEDS = [(f"{s} ips  ({s * 25.4:.0f} mm/sn)", s) for s in range(1, 15)]
-PRINT_METHODS = [("Termal transfer (ribonlu)", "T", "thermal trans"),
-                 ("Direkt termal (ribonsuz)", "D", "direct thermal")]
-MEDIA_TYPES = [("Boşluklu / çentikli etiket", "W", "gap/notch"),
-               ("Siyah işaretli", "M", "mark"),
-               ("Sürekli (continuous)", "N", "continuous")]
-PRINT_MODES = [("Yırtma (Tear-off)", "T", "tear off"),
-               ("Soyma (Peel-off)", "P", "peel off"),
-               ("Kesici (Cutter)", "C", "cutter"),
-               ("Geri sarma (Rewind)", "R", "rewind"),
-               ("Aplikatör", "A", "applicator"),
-               ("Gecikmeli kesici", "D", "delayed cut")]
+SPEEDS = [(tr('{0} ips  ({1:.0f} mm/sn)').format(s, s * 25.4), s) for s in range(1, 15)]
+PRINT_METHODS = [(tr('Termal transfer (ribonlu)'), "T", "thermal trans"),
+                 (tr('Direkt termal (ribonsuz)'), "D", "direct thermal")]
+MEDIA_TYPES = [(tr('Boşluklu / çentikli etiket'), "W", "gap/notch"),
+               (tr('Siyah işaretli'), "M", "mark"),
+               (tr('Sürekli (continuous)'), "N", "continuous")]
+PRINT_MODES = [(tr('Yırtma (Tear-off)'), "T", "tear off"),
+               (tr('Soyma (Peel-off)'), "P", "peel off"),
+               (tr('Kesici (Cutter)'), "C", "cutter"),
+               (tr('Geri sarma (Rewind)'), "R", "rewind"),
+               (tr('Aplikatör'), "A", "applicator"),
+               (tr('Gecikmeli kesici'), "D", "delayed cut")]
 
 QUICK_COMMANDS = [
-    ("Kimlik (~HI)", "~HI", True),
-    ("Durum (~HS)", "~HS", True),
-    ("Yapılandırma metni (^HH)", "^XA^HH^XZ", True),
-    ("Tüm SGD değişkenleri (allcv)", '! U1 getvar "allcv"\r\n', True),
+    (tr('Kimlik (~HI)'), "~HI", True),
+    (tr('Durum (~HS)'), "~HS", True),
+    (tr('Yapılandırma metni (^HH)'), "^XA^HH^XZ", True),
+    (tr('Tüm SGD değişkenleri (allcv)'), '! U1 getvar "allcv"\r\n', True),
     ("Model (SGD)", '! U1 getvar "device.product_name"\r\n', True),
-    ("Yapılandırma etiketi bas (~WC)", "~WC", False),
-    ("Ağ etiketi bas (~WL)", "~WL", False),
-    ("Kalibre et (~JC)", "~JC", False),
+    (tr('Yapılandırma etiketi bas (~WC)'), "~WC", False),
+    (tr('Ağ etiketi bas (~WL)'), "~WL", False),
+    (tr('Kalibre et (~JC)'), "~JC", False),
 ]
 
 
 class SetupWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zebra Kurulum Aracı")
+        self.setWindowTitle(tr('Zebra Kurulum Aracı'))
         if os.path.exists(ICON_PATH):
             self.setWindowIcon(QIcon(ICON_PATH))
         self.resize(1100, 720)
@@ -74,14 +75,14 @@ class SetupWindow(QMainWindow):
         # --- sol: yazıcı listesi
         left = QWidget()
         ll = QVBoxLayout(left)
-        ll.addWidget(QLabel("<b>Yazıcılar</b>"))
+        ll.addWidget(QLabel(tr('<b>Yazıcılar</b>')))
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._printer_changed)
         self.list.itemDoubleClicked.connect(lambda *_: self._edit_printer())
         ll.addWidget(self.list, 1)
         grid = QGridLayout()
-        for i, (txt, fn) in enumerate([("Ekle…", self._add_printer), ("Bul…", self._discover),
-                                       ("Düzenle…", self._edit_printer), ("Kaldır", self._remove_printer)]):
+        for i, (txt, fn) in enumerate([(tr('Ekle…'), self._add_printer), (tr('Bul…'), self._discover),
+                                       (tr('Düzenle…'), self._edit_printer), (tr('Kaldır'), self._remove_printer)]):
             b = QPushButton(txt)
             b.clicked.connect(fn)
             grid.addWidget(b, i // 2, i % 2)
@@ -90,12 +91,12 @@ class SetupWindow(QMainWindow):
 
         # --- sağ: sekmeler
         self.tabs = QTabWidget()
-        self.tabs.addTab(self._build_status_tab(), "Durum")
-        self.tabs.addTab(self._build_settings_tab(), "Ayarlar")
-        self.tabs.addTab(self._build_actions_tab(), "Eylemler")
-        self.tabs.addTab(self._build_network_tab(), "Ağ")
-        self.tabs.addTab(self._build_send_tab(), "Dosya gönder")
-        self.tabs.addTab(self._build_files_tab(), "Yazıcı belleği")
+        self.tabs.addTab(self._build_status_tab(), tr('Durum'))
+        self.tabs.addTab(self._build_settings_tab(), tr('Ayarlar'))
+        self.tabs.addTab(self._build_actions_tab(), tr('Eylemler'))
+        self.tabs.addTab(self._build_network_tab(), tr('Ağ'))
+        self.tabs.addTab(self._build_send_tab(), tr('Dosya gönder'))
+        self.tabs.addTab(self._build_files_tab(), tr('Yazıcı belleği'))
         self.tabs.addTab(self._build_terminal_tab(), "Terminal")
         split.addWidget(self.tabs)
         split.setSizes([260, 840])
@@ -104,25 +105,25 @@ class SetupWindow(QMainWindow):
         self._build_menu()
         self._refresh_list()
         if not self.printers:
-            self.statusBar().showMessage("Yazıcı yok. 'Bul…' ile ağda/USB'de/CUPS'ta arayın ya da 'Ekle…' ile ekleyin.")
+            self.statusBar().showMessage(tr("Yazıcı yok. 'Bul…' ile ağda/USB'de/CUPS'ta arayın ya da 'Ekle…' ile ekleyin."))
 
     # ------------------------------------------------------------------ menü
     def _build_menu(self):
-        m = self.menuBar().addMenu("&Dosya")
-        a = QAction("Etiket Tasarımcısını aç", self)
+        m = self.menuBar().addMenu(tr('&Dosya'))
+        a = QAction(tr('Etiket Tasarımcısını aç'), self)
         a.triggered.connect(self._open_designer)
         m.addAction(a)
         m.addSeparator()
-        a = QAction("Çıkış", self)
+        a = QAction(tr('Çıkış'), self)
         a.setShortcut("Ctrl+Q")
         a.triggered.connect(self.close)
         m.addAction(a)
-        h = self.menuBar().addMenu("&Yardım")
-        a = QAction("Hakkında", self)
+        add_language_menu(self, self.menuBar(), "zebratool.setup_app")
+        h = self.menuBar().addMenu(tr('&Yardım'))
+        a = QAction(tr('Hakkında'), self)
         a.triggered.connect(lambda: QMessageBox.about(
-            self, "Hakkında",
-            "<b>Zebra Kurulum Aracı</b><br>Linux için Zebra yazıcı yapılandırma aracı.<br>"
-            "Ağ (9100), USB (/dev/usb/lp*) ve CUPS raw kuyrukları desteklenir."))
+            self, tr('Hakkında'),
+            tr('<b>Zebra Kurulum Aracı</b><br>Linux için Zebra yazıcı yapılandırma aracı.<br>Ağ (9100), USB (/dev/usb/lp*) ve CUPS raw kuyrukları desteklenir.')))
         h.addAction(a)
 
     def _open_designer(self):
@@ -150,13 +151,12 @@ class SetupWindow(QMainWindow):
     def _require(self, bidirectional=False):
         cfg = self.current()
         if not cfg:
-            QMessageBox.information(self, "Yazıcı yok", "Önce soldan bir yazıcı seçin.")
+            QMessageBox.information(self, tr('Yazıcı yok'), tr('Önce soldan bir yazıcı seçin.'))
             return None
         if bidirectional and cfg.kind == "cups":
             QMessageBox.information(
-                self, "Okuma desteklenmiyor",
-                "CUPS kuyruğu üzerinden yazıcıdan bilgi okunamaz.\n"
-                "Ağ veya USB bağlantısı olarak ekleyin.")
+                self, tr('Okuma desteklenmiyor'),
+                tr('CUPS kuyruğu üzerinden yazıcıdan bilgi okunamaz.\nAğ veya USB bağlantısı olarak ekleyin.'))
             return None
         return cfg
 
@@ -181,15 +181,15 @@ class SetupWindow(QMainWindow):
         row = self.list.currentRow()
         if row < 0:
             return
-        if QMessageBox.question(self, "Kaldır", f"'{self.printers[row].name}' listeden kaldırılsın mı?") \
+        if QMessageBox.question(self, tr('Kaldır'), tr("'{0}' listeden kaldırılsın mı?").format(self.printers[row].name)) \
                 == QMessageBox.StandardButton.Yes:
             del self.printers[row]
             P.save_printers(self.printers)
             self._refresh_list()
 
     def _discover(self):
-        dlg = QProgressDialog("Yazıcılar aranıyor (CUPS, USB, yerel ağ port 9100)…", "Gizle", 0, 0, self)
-        dlg.setWindowTitle("Yazıcı bul")
+        dlg = QProgressDialog(tr('Yazıcılar aranıyor (CUPS, USB, yerel ağ port 9100)…'), tr('Gizle'), 0, 0, self)
+        dlg.setWindowTitle(tr('Yazıcı bul'))
         dlg.setMinimumDuration(0)
         dlg.show()
 
@@ -214,14 +214,14 @@ class SetupWindow(QMainWindow):
             known = {(p.kind, p.address, p.port) for p in self.printers}
             new = [f for f in found if (f.kind, f.address, f.port) not in known]
             if not new:
-                QMessageBox.information(self, "Yazıcı bul", "Listede olmayan yeni yazıcı bulunamadı.")
+                QMessageBox.information(self, tr('Yazıcı bul'), tr('Listede olmayan yeni yazıcı bulunamadı.'))
                 return
             items = [f"{f.name}  —  {f.describe()}" for f in new]
             from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QListWidget as LW
             d = QDialog(self)
-            d.setWindowTitle("Bulunan yazıcılar")
+            d.setWindowTitle(tr('Bulunan yazıcılar'))
             v = QVBoxLayout(d)
-            v.addWidget(QLabel("Eklenecek yazıcıları seçin:"))
+            v.addWidget(QLabel(tr('Eklenecek yazıcıları seçin:')))
             lw = LW()
             for t in items:
                 it = QListWidgetItem(t)
@@ -242,13 +242,13 @@ class SetupWindow(QMainWindow):
 
         def err(msg):
             dlg.close()
-            error_box(self, "Arama hatası", msg)
+            error_box(self, tr('Arama hatası'), msg)
 
         run_async(work, done, err, progress)
 
     def _printer_changed(self, row):
         cfg = self.current()
-        self.status_header.setText(f"<h2>{cfg.name}</h2>{cfg.describe()}" if cfg else "<h2>Yazıcı seçilmedi</h2>")
+        self.status_header.setText(f"<h2>{cfg.name}</h2>{cfg.describe()}" if cfg else tr('<h2>Yazıcı seçilmedi</h2>'))
         for lbl in self.info_labels.values():
             lbl.setText("—")
         self.status_flags.setText("")
@@ -256,7 +256,7 @@ class SetupWindow(QMainWindow):
             self._refresh_status()
 
     # ------------------------------------------------------------ yardımcı
-    def _run(self, cfg, fn, done=None, busy="Çalışıyor…"):
+    def _run(self, cfg, fn, done=None, busy=tr('Çalışıyor…')):
         """Yazıcıya bağlan, fn(conn) çalıştır."""
         self.statusBar().showMessage(f"{cfg.name}: {busy}")
         QApplication.setOverrideCursor(Qt.CursorShape.BusyCursor)
@@ -267,14 +267,14 @@ class SetupWindow(QMainWindow):
 
         def ok(res):
             QApplication.restoreOverrideCursor()
-            self.statusBar().showMessage(f"{cfg.name}: tamam", 4000)
+            self.statusBar().showMessage(tr('{0}: tamam').format(cfg.name), 4000)
             if done:
                 done(res)
 
         def err(msg):
             QApplication.restoreOverrideCursor()
-            self.statusBar().showMessage(f"{cfg.name}: hata", 4000)
-            error_box(self, "Yazıcı hatası", msg)
+            self.statusBar().showMessage(tr('{0}: hata').format(cfg.name), 4000)
+            error_box(self, tr('Yazıcı hatası'), msg)
 
         run_async(work, ok, err)
 
@@ -282,11 +282,11 @@ class SetupWindow(QMainWindow):
         cfg = self._require()
         if not cfg:
             return
-        if confirm and QMessageBox.question(self, "Onay", confirm) != QMessageBox.StandardButton.Yes:
+        if confirm and QMessageBox.question(self, tr('Onay'), confirm) != QMessageBox.StandardButton.Yes:
             return
         self._run(cfg, lambda c: c.send(data),
                   done=(lambda _: self.statusBar().showMessage(done_msg, 5000)) if done_msg else None,
-                  busy="gönderiliyor…")
+                  busy=tr('gönderiliyor…'))
 
     # ------------------------------------------------------------- Durum
     def _build_status_tab(self):
@@ -302,32 +302,32 @@ class SetupWindow(QMainWindow):
         self.status_flags.setFont(f)
         v.addWidget(self.status_flags)
 
-        self.prefix_box = QGroupBox("Uyarı")
+        self.prefix_box = QGroupBox(tr('Uyarı'))
         pb = QHBoxLayout(self.prefix_box)
         self.prefix_label = QLabel()
         self.prefix_label.setWordWrap(True)
         pb.addWidget(self.prefix_label, 1)
-        b = QPushButton("Öneki '~' yap ve kaydet")
+        b = QPushButton(tr("Öneki '~' yap ve kaydet"))
         b.clicked.connect(self._fix_prefix)
         pb.addWidget(b)
         self.prefix_box.setVisible(False)
         v.addWidget(self.prefix_box)
 
-        box = QGroupBox("Yazıcı bilgileri")
+        box = QGroupBox(tr('Yazıcı bilgileri'))
         form = QFormLayout(box)
         self.info_labels = {}
-        for key, title in [("model", "Model"), ("firmware", "Yazılım (firmware)"), ("serial", "Seri no"),
-                           ("dpi", "Çözünürlük"), ("method", "Baskı yöntemi"), ("mode", "Baskı modu"),
-                           ("length", "Etiket uzunluğu"), ("width", "Baskı genişliği"),
-                           ("odometer", "Toplam baskı uzunluğu"), ("labels", "Kuyruktaki etiket"),
-                           ("languages", "Diller"), ("ip", "IP adresi")]:
+        for key, title in [("model", "Model"), ("firmware", tr('Yazılım (firmware)')), ("serial", tr('Seri no')),
+                           ("dpi", tr('Çözünürlük')), ("method", tr('Baskı yöntemi')), ("mode", tr('Baskı modu')),
+                           ("length", tr('Etiket uzunluğu')), ("width", tr('Baskı genişliği')),
+                           ("odometer", tr('Toplam baskı uzunluğu')), ("labels", tr('Kuyruktaki etiket')),
+                           ("languages", tr('Diller')), ("ip", tr('IP adresi'))]:
             lbl = QLabel("—")
             lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             self.info_labels[key] = lbl
             form.addRow(title + ":", lbl)
         v.addWidget(box)
         h = QHBoxLayout()
-        b = QPushButton("Yenile")
+        b = QPushButton(tr('Yenile'))
         b.clicked.connect(self._refresh_status)
         h.addWidget(b)
         h.addStretch(1)
@@ -366,10 +366,10 @@ class SetupWindow(QMainWindow):
                 dpi = str(round(int(hi["dpmm"]) * 25.4))
             if not dpi and P.dpi_from_config(hh):
                 dpi = str(P.dpi_from_config(hh))
-            L["dpi"].setText(f"{dpi} dpi ({round(int(dpi) / 25.4)} nokta/mm)" if dpi else "—")
+            L["dpi"].setText(tr('{0} dpi ({1} nokta/mm)').format(dpi, round(int(dpi) / 25.4)) if dpi else "—")
             dpi_n = int(dpi) if dpi and dpi.isdigit() else cfg.dpi
             if hs:
-                L["method"].setText("Termal transfer" if hs["thermal_transfer"] else "Direkt termal")
+                L["method"].setText(tr('Termal transfer') if hs["thermal_transfer"] else tr('Direkt termal'))
                 L["mode"].setText(hs["print_mode"])
                 L["labels"].setText(str(hs["labels_remaining"]))
             else:
@@ -378,10 +378,10 @@ class SetupWindow(QMainWindow):
                 L["labels"].setText("—")
             ll = hs["label_length"] if hs else _num(hh.get("LABEL LENGTH"))
             if ll:
-                L["length"].setText(f"{ll} nokta ({mm(ll, dpi_n):.1f} mm)")
+                L["length"].setText(tr('{0} nokta ({1:.1f} mm)').format(ll, mm(ll, dpi_n)))
             pw = _num(r.get("ezpl.print_width")) or _num(hh.get("PRINT WIDTH"))
             if pw:
-                L["width"].setText(f"{pw} nokta ({mm(pw, dpi_n):.1f} mm)")
+                L["width"].setText(tr('{0} nokta ({1:.1f} mm)').format(pw, mm(pw, dpi_n)))
             L["odometer"].setText(r.get("odometer.total_print_length") or hh.get("TOTAL USAGE") or "—")
             L["languages"].setText(r.get("device.languages") or "—")
             ips = [r.get(k) for k in ("internal_wired.ip.addr", "wlan.ip.addr", "ip.addr")]
@@ -392,12 +392,10 @@ class SetupWindow(QMainWindow):
             self.prefix_box.setVisible(prefix is not None and prefix != 0x7E)
             if prefix is not None and prefix != 0x7E:
                 self.prefix_label.setText(
-                    f"<b>Kontrol öneki '~' yerine 0x{prefix:02X} olarak ayarlı.</b> Bu yüzden ~ ile başlayan "
-                    f"komutlar (durum, kalibrasyon, koyuluk…) çalışmaz"
-                    + (" ve 0xC3 Türkçe karakterlerin (ç, ö, ü, Ç, Ö, Ü…) UTF-8 kodunun ilk baytı olduğu "
-                       "için bu harfler baskıyı bozar." if prefix == 0xC3 else "."))
+                    tr("<b>Kontrol öneki '~' yerine 0x{0:02X} olarak ayarlı.</b> Bu yüzden ~ ile başlayan komutlar (durum, kalibrasyon, koyuluk…) çalışmaz").format(prefix)
+                    + (tr(' ve 0xC3 Türkçe karakterlerin (ç, ö, ü, Ç, Ö, Ü…) UTF-8 kodunun ilk baytı olduğu için bu harfler baskıyı bozar.') if prefix == 0xC3 else "."))
             if hs is None:
-                self.status_flags.setText("Durum bayrakları okunamadı (~HS yanıt vermedi)")
+                self.status_flags.setText(tr('Durum bayrakları okunamadı (~HS yanıt vermedi)'))
                 self.status_flags.setStyleSheet("color: #d35400")
                 return
             probs = P.status_summary(hs)
@@ -405,88 +403,85 @@ class SetupWindow(QMainWindow):
                 self.status_flags.setText("⚠ " + " · ".join(probs))
                 self.status_flags.setStyleSheet("color: #c0392b")
             else:
-                self.status_flags.setText("✔ Hazır")
+                self.status_flags.setText(tr('✔ Hazır'))
                 self.status_flags.setStyleSheet("color: #27ae60")
 
-        self._run(cfg, fn, done, busy="durum okunuyor…")
+        self._run(cfg, fn, done, busy=tr('durum okunuyor…'))
 
     def _fix_prefix(self):
         cfg = self._require()
         if not cfg:
             return
         if QMessageBox.question(
-                self, "Kontrol öneki",
-                "Yazıcının kontrol öneki standart '~' karakterine döndürülüp kalıcı olarak kaydedilecek "
-                "(^XA^CT~^JUS^XZ).\n\nBu yazıcıyı öneki değiştirilmiş varsayan eski bir yazılım kullanıyorsa "
-                "o yazılımın ~ komutları etkilenebilir. Devam edilsin mi?") != QMessageBox.StandardButton.Yes:
+                self, tr('Kontrol öneki'),
+                tr("Yazıcının kontrol öneki standart '~' karakterine döndürülüp kalıcı olarak kaydedilecek (^XA^CT~^JUS^XZ).\n\nBu yazıcıyı öneki değiştirilmiş varsayan eski bir yazılım kullanıyorsa o yazılımın ~ komutları etkilenebilir. Devam edilsin mi?")) != QMessageBox.StandardButton.Yes:
             return
         self._run(cfg, lambda c: c.send("^XA^CT~^JUS^XZ"),
                   lambda _: (self.prefix_box.setVisible(False), self._refresh_status()),
-                  busy="kontrol öneki düzeltiliyor…")
+                  busy=tr('kontrol öneki düzeltiliyor…'))
 
     # ------------------------------------------------------------- Ayarlar
     def _build_settings_tab(self):
         w = QWidget()
         v = QVBoxLayout(w)
 
-        box = QGroupBox("Baskı")
+        box = QGroupBox(tr('Baskı'))
         f = QFormLayout(box)
         self.s_dark = QSpinBox()
         self.s_dark.setRange(0, 30)
-        self.s_dark.setToolTip("~SD — 0 (açık) … 30 (koyu)")
-        f.addRow("Koyuluk:", self.s_dark)
+        self.s_dark.setToolTip(tr("~SD — 0 (açık) … 30 (koyu)"))
+        f.addRow(tr('Koyuluk:'), self.s_dark)
         self.s_speed = QComboBox()
         for t, s in SPEEDS:
             self.s_speed.addItem(t, s)
-        f.addRow("Baskı hızı:", self.s_speed)
+        f.addRow(tr('Baskı hızı:'), self.s_speed)
         self.s_method = QComboBox()
         for t, code, _ in PRINT_METHODS:
             self.s_method.addItem(t, code)
-        f.addRow("Baskı yöntemi:", self.s_method)
+        f.addRow(tr('Baskı yöntemi:'), self.s_method)
         self.s_mode = QComboBox()
         for t, code, _ in PRINT_MODES:
             self.s_mode.addItem(t, code)
-        f.addRow("Baskı modu:", self.s_mode)
+        f.addRow(tr('Baskı modu:'), self.s_mode)
         v.addWidget(box)
 
-        box = QGroupBox("Etiket / medya")
+        box = QGroupBox(tr('Etiket / medya'))
         f = QFormLayout(box)
         self.s_media = QComboBox()
         for t, code, _ in MEDIA_TYPES:
             self.s_media.addItem(t, code)
-        f.addRow("Medya türü:", self.s_media)
+        f.addRow(tr('Medya türü:'), self.s_media)
         self.s_width = self._dots_spin(2, 3000)
-        f.addRow("Baskı genişliği:", self.s_width[0])
+        f.addRow(tr('Baskı genişliği:'), self.s_width[0])
         self.s_length = self._dots_spin(1, 32000)
-        f.addRow("Etiket uzunluğu:", self.s_length[0])
+        f.addRow(tr('Etiket uzunluğu:'), self.s_length[0])
         self.s_tear = QSpinBox()
         self.s_tear.setRange(-120, 120)
-        self.s_tear.setSuffix(" nokta")
-        f.addRow("Yırtma konumu (~TA):", self.s_tear)
+        self.s_tear.setSuffix(tr(' nokta'))
+        f.addRow(tr('Yırtma konumu (~TA):'), self.s_tear)
         self.s_top = QSpinBox()
         self.s_top.setRange(-120, 120)
-        self.s_top.setSuffix(" nokta")
-        f.addRow("Etiket üstü (^LT):", self.s_top)
+        self.s_top.setSuffix(tr(' nokta'))
+        f.addRow(tr('Etiket üstü (^LT):'), self.s_top)
         self.s_left = QSpinBox()
         self.s_left.setRange(-9999, 9999)
-        self.s_left.setSuffix(" nokta")
-        f.addRow("Sol kaydırma (^LS):", self.s_left)
+        self.s_left.setSuffix(tr(' nokta'))
+        f.addRow(tr('Sol kaydırma (^LS):'), self.s_left)
         v.addWidget(box)
 
         h = QHBoxLayout()
-        b = QPushButton("Yazıcıdan oku")
+        b = QPushButton(tr('Yazıcıdan oku'))
         b.clicked.connect(self._read_settings)
         h.addWidget(b)
-        b = QPushButton("Yazıcıya uygula ve kaydet")
+        b = QPushButton(tr('Yazıcıya uygula ve kaydet'))
         b.clicked.connect(self._apply_settings)
         h.addWidget(b)
-        b = QPushButton("ZPL'i göster")
-        b.clicked.connect(lambda: self._show_text("Ayar komutları", self._settings_zpl()))
+        b = QPushButton(tr("ZPL'i göster"))
+        b.clicked.connect(lambda: self._show_text(tr('Ayar komutları'), self._settings_zpl()))
         h.addWidget(b)
         h.addStretch(1)
         v.addLayout(h)
-        v.addWidget(QLabel("<i>Not: Ayarlar ^JUS ile kalıcı olarak kaydedilir. "
-                           "Medya türünü değiştirdikten sonra 'Eylemler → Kalibre et' önerilir.</i>"))
+        v.addWidget(QLabel(tr("<i>Not: Ayarlar ^JUS ile kalıcı olarak kaydedilir. Medya türünü değiştirdikten sonra 'Eylemler → Kalibre et' önerilir.</i>")))
         v.addStretch(1)
         return w
 
@@ -496,7 +491,7 @@ class SetupWindow(QMainWindow):
         h.setContentsMargins(0, 0, 0, 0)
         sp = QSpinBox()
         sp.setRange(lo, hi)
-        sp.setSuffix(" nokta")
+        sp.setSuffix(tr(' nokta'))
         lbl = QLabel()
         sp.valueChanged.connect(lambda val: lbl.setText(f"= {mm(val, self._dpi()):.1f} mm"))
         h.addWidget(sp)
@@ -563,7 +558,7 @@ class SetupWindow(QMainWindow):
             self.s_top.setValue(num(r["zpl.label_top"]))
             self.s_left.setValue(num(r["zpl.left_position"]))
 
-        self._run(cfg, fn, done, busy="ayarlar okunuyor…")
+        self._run(cfg, fn, done, busy=tr('ayarlar okunuyor…'))
 
     def _settings_zpl(self):
         return (f"~SD{self.s_dark.value():02d}\n"
@@ -581,36 +576,35 @@ class SetupWindow(QMainWindow):
                 f"^XZ\n")
 
     def _apply_settings(self):
-        self._send(self._settings_zpl(), confirm="Ayarlar yazıcıya gönderilip kalıcı olarak kaydedilsin mi?",
-                   done_msg="Ayarlar kaydedildi.")
+        self._send(self._settings_zpl(), confirm=tr('Ayarlar yazıcıya gönderilip kalıcı olarak kaydedilsin mi?'),
+                   done_msg=tr('Ayarlar kaydedildi.'))
 
     # ------------------------------------------------------------- Eylemler
     def _build_actions_tab(self):
         w = QWidget()
         v = QVBoxLayout(w)
         groups = [
-            ("Medya", [
-                ("Kalibre et", "~JC", "Etiket boyu ve sensör otomatik kalibre edilir.", None),
-                ("Sensör profilini bas", "~JG", "Medya sensör grafiğini basar.", None),
-                ("Bir etiket ilerlet", "^XA^FO0,0^FD ^FS^XZ", "Boş bir etiket çıkarır.", None),
+            (tr('Medya'), [
+                (tr('Kalibre et'), "~JC", tr('Etiket boyu ve sensör otomatik kalibre edilir.'), None),
+                (tr('Sensör profilini bas'), "~JG", tr('Medya sensör grafiğini basar.'), None),
+                (tr('Bir etiket ilerlet'), "^XA^FO0,0^FD ^FS^XZ", tr('Boş bir etiket çıkarır.'), None),
             ]),
-            ("Rapor", [
-                ("Yapılandırma etiketi bas", "~WC", "Tüm ayarları etiket olarak basar.", None),
-                ("Ağ yapılandırmasını bas", "~WL", "Ağ ayarlarını basar.", None),
-                ("Test etiketi bas", None, "Örnek metin ve barkodlu etiket.", self._test_label),
+            (tr('Rapor'), [
+                (tr('Yapılandırma etiketi bas'), "~WC", tr('Tüm ayarları etiket olarak basar.'), None),
+                (tr('Ağ yapılandırmasını bas'), "~WL", tr('Ağ ayarlarını basar.'), None),
+                (tr('Test etiketi bas'), None, tr('Örnek metin ve barkodlu etiket.'), self._test_label),
             ]),
-            ("Kontrol", [
-                ("Duraklat", "~PP", "Baskıyı duraklatır.", None),
-                ("Devam et", "~PS", "Duraklatılmış baskıyı sürdürür.", None),
-                ("Tüm işleri iptal et", "~JA", "Arabellekteki tüm formatları siler.", None),
-                ("Yeniden başlat", "~JR", "Yazıcıyı yazılımsal olarak sıfırlar.", "confirm"),
+            (tr('Kontrol'), [
+                (tr('Duraklat'), "~PP", tr('Baskıyı duraklatır.'), None),
+                (tr('Devam et'), "~PS", tr('Duraklatılmış baskıyı sürdürür.'), None),
+                (tr('Tüm işleri iptal et'), "~JA", tr('Arabellekteki tüm formatları siler.'), None),
+                (tr('Yeniden başlat'), "~JR", tr('Yazıcıyı yazılımsal olarak sıfırlar.'), "confirm"),
             ]),
-            ("Bakım", [
-                ("Kayıtlı ayarları geri yükle", "^XA^JUR^XZ", "Son kaydedilen ayarlara döner.", "confirm"),
-                ("Fabrika ayarlarına dön", "^XA^JUF^XZ",
-                 "Yazıcı ayarlarını fabrika değerlerine döndürür (ağ hariç). Kaydetmek için ardından 'Ayarlar' "
-                 "sekmesinden uygulayın.", "confirm"),
-                ("Ağ ayarlarını fabrikaya döndür", "^XA^JUN^XZ", "Ağ ayarlarını sıfırlar.", "confirm"),
+            (tr('Bakım'), [
+                (tr('Kayıtlı ayarları geri yükle'), "^XA^JUR^XZ", tr('Son kaydedilen ayarlara döner.'), "confirm"),
+                (tr('Fabrika ayarlarına dön'), "^XA^JUF^XZ",
+                 tr("Yazıcı ayarlarını fabrika değerlerine döndürür (ağ hariç). Kaydetmek için ardından 'Ayarlar' sekmesinden uygulayın."), "confirm"),
+                (tr('Ağ ayarlarını fabrikaya döndür'), "^XA^JUN^XZ", tr('Ağ ayarlarını sıfırlar.'), "confirm"),
             ]),
         ]
         for title, items in groups:
@@ -622,8 +616,8 @@ class SetupWindow(QMainWindow):
                 if callable(extra):
                     b.clicked.connect(extra)
                 else:
-                    conf = f"{label}: {tip}\n\nDevam edilsin mi?" if extra == "confirm" else None
-                    b.clicked.connect(lambda _=False, c=cmd, cf=conf, l=label: self._send(c, cf, f"{l}: gönderildi"))
+                    conf = tr('{0}: {1}\n\nDevam edilsin mi?').format(label, tip) if extra == "confirm" else None
+                    b.clicked.connect(lambda _=False, c=cmd, cf=conf, l=label: self._send(c, cf, tr('{0}: gönderildi').format(l)))
                 g.addWidget(b, i, 0)
                 g.addWidget(QLabel(tip), i, 1)
             g.setColumnStretch(1, 1)
@@ -643,51 +637,50 @@ class SetupWindow(QMainWindow):
                f"^FO{s(30)},{s(120)}^BY{max(1, s(2))}^BCN,{s(80)},Y,N,N^FD123456789012^FS"
                f"^FO{s(30)},{s(240)}^GB{s(300)},{s(4)},{s(4)}^FS"
                f"^XZ")
-        self._send(zpl, done_msg="Test etiketi gönderildi.")
+        self._send(zpl, done_msg=tr('Test etiketi gönderildi.'))
 
     # ------------------------------------------------------------- Ağ
     def _build_network_tab(self):
         w = QWidget()
         v = QVBoxLayout(w)
-        box = QGroupBox("IP ayarları")
+        box = QGroupBox(tr('IP ayarları'))
         f = QFormLayout(box)
         self.n_iface = QComboBox()
-        self.n_iface.addItem("Kablolu (internal_wired)", "internal_wired")
-        self.n_iface.addItem("Kablosuz (wlan)", "wlan")
-        self.n_iface.addItem("Genel (ip)", "ip")
-        f.addRow("Arayüz:", self.n_iface)
+        self.n_iface.addItem(tr('Kablolu (internal_wired)'), "internal_wired")
+        self.n_iface.addItem(tr('Kablosuz (wlan)'), "wlan")
+        self.n_iface.addItem(tr('Genel (ip)'), "ip")
+        f.addRow(tr('Arayüz:'), self.n_iface)
         self.n_proto = QComboBox()
-        self.n_proto.addItem("DHCP (otomatik)", "dhcp")
-        self.n_proto.addItem("Sabit IP", "permanent")
-        f.addRow("Adres alma:", self.n_proto)
+        self.n_proto.addItem(tr('DHCP (otomatik)'), "dhcp")
+        self.n_proto.addItem(tr('Sabit IP'), "permanent")
+        f.addRow(tr('Adres alma:'), self.n_proto)
         self.n_ip, self.n_mask, self.n_gw = QLineEdit(), QLineEdit(), QLineEdit()
-        f.addRow("IP adresi:", self.n_ip)
-        f.addRow("Alt ağ maskesi:", self.n_mask)
-        f.addRow("Ağ geçidi:", self.n_gw)
+        f.addRow(tr('IP adresi:'), self.n_ip)
+        f.addRow(tr('Alt ağ maskesi:'), self.n_mask)
+        f.addRow(tr('Ağ geçidi:'), self.n_gw)
         self.n_proto.currentIndexChanged.connect(self._proto_changed)
         self._proto_changed()
         v.addWidget(box)
 
-        box = QGroupBox("Kablosuz (yalnızca Wi-Fi modüllü yazıcılar)")
+        box = QGroupBox(tr('Kablosuz (yalnızca Wi-Fi modüllü yazıcılar)'))
         f = QFormLayout(box)
         self.n_ssid = QLineEdit()
         f.addRow("SSID (wlan.essid):", self.n_ssid)
         self.n_psk = QLineEdit()
         self.n_psk.setEchoMode(QLineEdit.EchoMode.Password)
-        f.addRow("WPA parolası:", self.n_psk)
+        f.addRow(tr('WPA parolası:'), self.n_psk)
         v.addWidget(box)
 
         h = QHBoxLayout()
-        b = QPushButton("Yazıcıdan oku")
+        b = QPushButton(tr('Yazıcıdan oku'))
         b.clicked.connect(self._read_network)
         h.addWidget(b)
-        b = QPushButton("Uygula ve ağı yeniden başlat")
+        b = QPushButton(tr('Uygula ve ağı yeniden başlat'))
         b.clicked.connect(self._apply_network)
         h.addWidget(b)
         h.addStretch(1)
         v.addLayout(h)
-        v.addWidget(QLabel("<i>Dikkat: IP adresini değiştirirseniz yazıcıya bu bilgisayardan yeni adresle "
-                           "bağlanmak için yazıcı kaydını düzenlemeniz gerekir.</i>"))
+        v.addWidget(QLabel(tr('<i>Dikkat: IP adresini değiştirirseniz yazıcıya bu bilgisayardan yeni adresle bağlanmak için yazıcı kaydını düzenlemeniz gerekir.</i>')))
         v.addStretch(1)
         return w
 
@@ -716,7 +709,7 @@ class SetupWindow(QMainWindow):
 
         def done(r):
             if all(r.get(k) is None for k in ("addr", "netmask", "gateway")):
-                QMessageBox.information(self, "Ağ", "Bu arayüz yazıcıda bulunamadı.")
+                QMessageBox.information(self, tr('Ağ'), tr('Bu arayüz yazıcıda bulunamadı.'))
                 return
             self.n_ip.setText(r.get("addr") or "")
             self.n_mask.setText(r.get("netmask") or "")
@@ -726,7 +719,7 @@ class SetupWindow(QMainWindow):
             if r.get("ssid") is not None:
                 self.n_ssid.setText(r["ssid"])
 
-        self._run(cfg, fn, done, busy="ağ ayarları okunuyor…")
+        self._run(cfg, fn, done, busy=tr('ağ ayarları okunuyor…'))
 
     def _apply_network(self):
         cfg = self._require()
@@ -750,8 +743,8 @@ class SetupWindow(QMainWindow):
                 cmds.append(("wlan.security", "wpa_psk"))
                 cmds.append(("wlan.wpa.psk", self.n_psk.text()))
         summary = "\n".join(f"{k} = {'********' if 'psk' in k else v}" for k, v in cmds)
-        if QMessageBox.question(self, "Ağ ayarları",
-                                f"Şu ayarlar uygulanacak ve ağ yeniden başlatılacak:\n\n{summary}\n\nDevam?") \
+        if QMessageBox.question(self, tr('Ağ ayarları'),
+                                tr('Şu ayarlar uygulanacak ve ağ yeniden başlatılacak:\n\n{0}\n\nDevam?').format(summary)) \
                 != QMessageBox.StandardButton.Yes:
             return
 
@@ -761,29 +754,26 @@ class SetupWindow(QMainWindow):
             P.sgd_do(c, "device.reset")
 
         self._run(cfg, fn, lambda _: QMessageBox.information(
-            self, "Ağ", "Ayarlar gönderildi; yazıcı yeniden başlıyor."), busy="ağ ayarları gönderiliyor…")
+            self, tr('Ağ'), tr('Ayarlar gönderildi; yazıcı yeniden başlıyor.')), busy=tr('ağ ayarları gönderiliyor…'))
 
     # ------------------------------------------------------------- Dosya gönder
     def _build_send_tab(self):
         w = QWidget()
         v = QVBoxLayout(w)
-        v.addWidget(QLabel("ZPL/EPL/PRN dosyası, yazıcı yazılımı (firmware) veya font/grafik dosyasını "
-                           "olduğu gibi yazıcıya gönderin."))
-        self.send_file = FilePicker("Dosya seç", "Yazıcı dosyaları (*.zpl *.prn *.txt *.epl *.nrd *.zpl2 "
-                                                 "*.grf *.ttf *.zsf *.zhf);;Tüm dosyalar (*)")
+        v.addWidget(QLabel(tr('ZPL/EPL/PRN dosyası, yazıcı yazılımı (firmware) veya font/grafik dosyasını olduğu gibi yazıcıya gönderin.')))
+        self.send_file = FilePicker(tr('Dosya seç'), tr('Yazıcı dosyaları (*.zpl *.prn *.txt *.epl *.nrd *.zpl2 *.grf *.ttf *.zsf *.zhf);;Tüm dosyalar (*)'))
         v.addWidget(self.send_file)
         h = QHBoxLayout()
-        h.addWidget(QLabel("Kopya:"))
+        h.addWidget(QLabel(tr('Kopya:')))
         self.send_copies = QSpinBox()
         self.send_copies.setRange(1, 9999)
         h.addWidget(self.send_copies)
-        b = QPushButton("Gönder")
+        b = QPushButton(tr('Gönder'))
         b.clicked.connect(self._send_file)
         h.addWidget(b)
         h.addStretch(1)
         v.addLayout(h)
-        v.addWidget(QLabel("<i>Yazıcı yazılımı güncellemesi sırasında yazıcıyı kapatmayın; gönderim birkaç "
-                           "dakika sürebilir.</i>"))
+        v.addWidget(QLabel(tr('<i>Yazıcı yazılımı güncellemesi sırasında yazıcıyı kapatmayın; gönderim birkaç dakika sürebilir.</i>')))
         v.addStretch(1)
         return w
 
@@ -793,40 +783,39 @@ class SetupWindow(QMainWindow):
         if not cfg:
             return
         if not os.path.isfile(path):
-            QMessageBox.warning(self, "Dosya", "Geçerli bir dosya seçin.")
+            QMessageBox.warning(self, tr('Dosya'), tr('Geçerli bir dosya seçin.'))
             return
         with open(path, "rb") as f:
             data = f.read()
         copies = self.send_copies.value()
         self._run(cfg, lambda c: c.send(data * copies),
-                  lambda _: self.statusBar().showMessage(f"{os.path.basename(path)} gönderildi "
-                                                         f"({len(data) * copies} bayt)", 6000),
-                  busy=f"{os.path.basename(path)} gönderiliyor…")
+                  lambda _: self.statusBar().showMessage(tr('{0} gönderildi ({1} bayt)').format(os.path.basename(path), len(data) * copies), 6000),
+                  busy=tr('{0} gönderiliyor…').format(os.path.basename(path)))
 
     # ------------------------------------------------------------- Yazıcı belleği
     def _build_files_tab(self):
         w = QWidget()
         v = QVBoxLayout(w)
         h = QHBoxLayout()
-        h.addWidget(QLabel("Sürücü:"))
+        h.addWidget(QLabel(tr('Sürücü:')))
         self.f_drive = QComboBox()
         for d in ("E:", "R:", "B:", "Z:", "A:"):
             self.f_drive.addItem(d)
         h.addWidget(self.f_drive)
-        b = QPushButton("Listele")
+        b = QPushButton(tr('Listele'))
         b.clicked.connect(self._list_files)
         h.addWidget(b)
-        b = QPushButton("Seçileni sil")
+        b = QPushButton(tr('Seçileni sil'))
         b.clicked.connect(self._delete_file)
         h.addWidget(b)
-        b = QPushButton("Formatı bas…")
-        b.setToolTip("Seçili .ZPL formatını ^XF ile çağırıp basar")
+        b = QPushButton(tr('Formatı bas…'))
+        b.setToolTip(tr('Seçili .ZPL formatını ^XF ile çağırıp basar'))
         b.clicked.connect(self._recall_format)
         h.addWidget(b)
         h.addStretch(1)
         v.addLayout(h)
         self.f_table = QTableWidget(0, 2)
-        self.f_table.setHorizontalHeaderLabels(["Dosya", "Boyut (bayt)"])
+        self.f_table.setHorizontalHeaderLabels([tr('Dosya'), tr('Boyut (bayt)')])
         self.f_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.f_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.f_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -851,9 +840,9 @@ class SetupWindow(QMainWindow):
                 self.f_table.setItem(i, 0, QTableWidgetItem(name))
                 self.f_table.setItem(i, 1, QTableWidgetItem(size))
             if not rows:
-                self.statusBar().showMessage(f"{drive} boş ya da yanıt çözümlenemedi.", 5000)
+                self.statusBar().showMessage(tr('{0} boş ya da yanıt çözümlenemedi.').format(drive), 5000)
 
-        self._run(cfg, fn, done, busy="dosyalar listeleniyor…")
+        self._run(cfg, fn, done, busy=tr('dosyalar listeleniyor…'))
 
     def _selected_file(self):
         r = self.f_table.currentRow()
@@ -863,56 +852,55 @@ class SetupWindow(QMainWindow):
         name = self._selected_file()
         if not name:
             return
-        self._send(f"^XA^ID{name}^FS^XZ", confirm=f"{name} yazıcıdan silinsin mi?", done_msg=f"{name} silindi")
+        self._send(f"^XA^ID{name}^FS^XZ", confirm=tr('{0} yazıcıdan silinsin mi?').format(name), done_msg=tr('{0} silindi').format(name))
         self._list_files()
 
     def _recall_format(self):
         name = self._selected_file()
         if not name:
             return
-        n, ok = QInputDialog.getInt(self, "Bas", "Kopya sayısı:", 1, 1, 9999)
+        n, ok = QInputDialog.getInt(self, tr('Bas'), tr('Kopya sayısı:'), 1, 1, 9999)
         if ok:
-            self._send(f"^XA^XF{name}^FS^PQ{n}^XZ", done_msg=f"{name} basıldı")
+            self._send(f"^XA^XF{name}^FS^PQ{n}^XZ", done_msg=tr('{0} basıldı').format(name))
 
     # ------------------------------------------------------------- Terminal
     def _build_terminal_tab(self):
         w = QWidget()
         v = QVBoxLayout(w)
         h = QHBoxLayout()
-        h.addWidget(QLabel("Hazır komut:"))
+        h.addWidget(QLabel(tr('Hazır komut:')))
         self.t_quick = QComboBox()
-        self.t_quick.addItem("— seçin —", None)
+        self.t_quick.addItem(tr('— seçin —'), None)
         for label, cmd, resp in QUICK_COMMANDS:
             self.t_quick.addItem(label, (cmd, resp))
         self.t_quick.activated.connect(self._quick_selected)
         h.addWidget(self.t_quick, 1)
         v.addLayout(h)
         self.t_in = QPlainTextEdit()
-        self.t_in.setPlaceholderText("ZPL veya SGD komutu yazın, ör.  ^XA^FO50,50^A0N,40,40^FDMerhaba^FS^XZ\n"
-                                     "ya da  ! U1 getvar \"device.product_name\"")
+        self.t_in.setPlaceholderText(tr('ZPL veya SGD komutu yazın, ör.  ^XA^FO50,50^A0N,40,40^FDMerhaba^FS^XZ\nya da  ! U1 getvar "device.product_name"'))
         mono = QFont("monospace")
         mono.setStyleHint(QFont.StyleHint.Monospace)
         self.t_in.setFont(mono)
         self.t_in.setMaximumHeight(140)
         v.addWidget(self.t_in)
         h = QHBoxLayout()
-        self.t_wait = QCheckBox("Yanıt bekle")
+        self.t_wait = QCheckBox(tr('Yanıt bekle'))
         self.t_wait.setChecked(True)
         h.addWidget(self.t_wait)
-        h.addWidget(QLabel("Süre:"))
+        h.addWidget(QLabel(tr('Süre:')))
         self.t_timeout = QDoubleSpinBox()
         self.t_timeout.setRange(0.5, 60)
         self.t_timeout.setValue(3)
-        self.t_timeout.setSuffix(" sn")
+        self.t_timeout.setSuffix(tr(' sn'))
         h.addWidget(self.t_timeout)
-        self.t_crlf = QCheckBox("Sonuna CR/LF ekle")
+        self.t_crlf = QCheckBox(tr('Sonuna CR/LF ekle'))
         self.t_crlf.setChecked(True)
         h.addWidget(self.t_crlf)
         h.addStretch(1)
-        b = QPushButton("Temizle")
+        b = QPushButton(tr('Temizle'))
         b.clicked.connect(lambda: self.t_out.clear())
         h.addWidget(b)
-        b = QPushButton("Gönder  (Ctrl+Enter)")
+        b = QPushButton(tr('Gönder  (Ctrl+Enter)'))
         b.setShortcut("Ctrl+Return")
         b.clicked.connect(self._terminal_send)
         h.addWidget(b)
@@ -951,14 +939,14 @@ class SetupWindow(QMainWindow):
 
         def done(res):
             if res is None:
-                self.t_out.appendPlainText("(gönderildi)\n")
+                self.t_out.appendPlainText(tr('(gönderildi)\n'))
             elif not res:
-                self.t_out.appendPlainText("(yanıt yok)\n")
+                self.t_out.appendPlainText(tr('(yanıt yok)\n'))
             else:
                 txt = res.decode("utf-8", "replace").replace("\x02", "<STX>").replace("\x03", "<ETX>")
                 self.t_out.appendPlainText(txt.rstrip() + "\n")
 
-        self._run(cfg, fn, done, busy="komut gönderiliyor…")
+        self._run(cfg, fn, done, busy=tr('komut gönderiliyor…'))
 
     def _show_text(self, title, text):
         from PyQt6.QtWidgets import QDialog
@@ -974,7 +962,7 @@ class SetupWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Zebra Kurulum Aracı")
+    app.setApplicationName(tr('Zebra Kurulum Aracı'))
     app.setDesktopFileName("zebra-setup")
     w = SetupWindow()
     w.show()

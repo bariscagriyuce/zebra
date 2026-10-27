@@ -44,9 +44,11 @@ cp "$SRC/zebratool/icons/"*.svg "$ICONS/"
 cat > "$APPS/zebra-setup.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Zebra Kurulum Aracı
+Name=Zebra Setup Utility
+Name[tr]=Zebra Kurulum Aracı
 GenericName=Zebra Setup Utilities
-Comment=Zebra etiket yazıcılarını yapılandır, kalibre et, dosya gönder
+Comment=Configure and calibrate Zebra label printers, send files
+Comment[tr]=Zebra etiket yazıcılarını yapılandır, kalibre et, dosya gönder
 Exec=$BIN/zebra-setup
 Icon=zebra-setup
 Categories=Utility;Settings;HardwareSettings;
@@ -57,9 +59,11 @@ EOF
 cat > "$APPS/zebra-designer.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Zebra Etiket Tasarımcısı
+Name=Zebra Label Designer
+Name[tr]=Zebra Etiket Tasarımcısı
 GenericName=ZebraDesigner
-Comment=Barkodlu etiket tasarla ve Zebra yazıcıda bas
+Comment=Design barcode labels and print them on Zebra printers
+Comment[tr]=Barkodlu etiket tasarla ve Zebra yazıcıda bas
 Exec=$BIN/zebra-designer %f
 Icon=zebra-designer
 MimeType=application/x-zebra-label;

@@ -16,6 +16,7 @@ from ..connection import make_connection
 from ..qtutil import run_async
 from .items import ZEBRA0, ImageItem
 from .document import mm_to_dots, dots_to_mm
+from ..i18n import tr
 
 
 class PropertyPanel(QScrollArea):
@@ -32,7 +33,7 @@ class PropertyPanel(QScrollArea):
         self._dpi = 203
         self._set_empty()
 
-    def _set_empty(self, msg="Bir öğe seçin ya da araç çubuğundan ekleyin."):
+    def _set_empty(self, msg=tr('Bir öğe seçin ya da araç çubuğundan ekleyin.')):
         w = QLabel(msg)
         w.setWordWrap(True)
         w.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -93,8 +94,7 @@ class PropertyPanel(QScrollArea):
             x, y = self.item.p["x"], self.item.p["y"]
             w, h = self.item.outer_size()
             d = self._dpi
-            self.mm_label.setText(f"<small>Konum: {dots_to_mm(x, d):.1f} × {dots_to_mm(y, d):.1f} mm · "
-                                  f"Boyut: {dots_to_mm(w, d):.1f} × {dots_to_mm(h, d):.1f} mm</small>")
+            self.mm_label.setText(tr('<small>Konum: {0:.1f} × {1:.1f} mm · Boyut: {2:.1f} × {3:.1f} mm</small>').format(dots_to_mm(x, d), dots_to_mm(y, d), dots_to_mm(w, d), dots_to_mm(h, d)))
         finally:
             self._updating = False
 
@@ -138,25 +138,25 @@ class PropertyPanel(QScrollArea):
             ed.currentIndexChanged.connect(lambda i, k=key, e=ed: self._emit(k, e.itemData(i)))
         elif kind == "font":
             ed = QComboBox()
-            ed.addItem("Zebra 0 (yazıcı fontu, hızlı)", ZEBRA0)
+            ed.addItem(tr('Zebra 0 (yazıcı fontu, hızlı)'), ZEBRA0)
             for fam in QFontDatabase.families():
-                ed.addItem(f"{fam}  (grafik olarak)", fam)
+                ed.addItem(tr('{0}  (grafik olarak)').format(fam), fam)
             ed.setMaxVisibleItems(20)
             ed.currentIndexChanged.connect(lambda i, k=key, e=ed: self._emit(k, e.itemData(i)))
         elif kind == "image":
-            ed = QPushButton("Resim seç…")
+            ed = QPushButton(tr('Resim seç…'))
             ed.clicked.connect(self._pick_image)
         else:
             ed = QLabel("?")
         return ed
 
     def _pick_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Resim seç", "",
-                                              "Resimler (*.png *.jpg *.jpeg *.bmp *.gif *.svg *.webp)")
+        path, _ = QFileDialog.getOpenFileName(self, tr('Resim seç'), "",
+                                              tr('Resimler (*.png *.jpg *.jpeg *.bmp *.gif *.svg *.webp)'))
         if path and isinstance(self.item, ImageItem):
             img = QImage(path)
             if img.isNull():
-                QMessageBox.warning(self, "Resim", "Resim açılamadı.")
+                QMessageBox.warning(self, tr('Resim'), tr('Resim açılamadı.'))
                 return
             self.item.set_image(img)
             self.item.set_prop("h", self.item.p["h"]) if not self.item.p.get("keep_aspect") else \
@@ -168,8 +168,8 @@ class PropertyPanel(QScrollArea):
 # ============================================================================ Etiket ayarları
 
 PRESETS = [
-    ("Özel", None, None),
-    ("100 × 150 mm (kargo)", 100, 150),
+    (tr('Özel'), None, None),
+    (tr('100 × 150 mm (kargo)'), 100, 150),
     ("100 × 100 mm", 100, 100),
     ("100 × 50 mm", 100, 50),
     ("102 × 76 mm (4×3\")", 101.6, 76.2),
@@ -185,17 +185,17 @@ PRESETS = [
 class LabelDialog(QDialog):
     def __init__(self, label, printers, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Etiket ayarları")
+        self.setWindowTitle(tr('Etiket ayarları'))
         self.printers = printers
         v = QVBoxLayout(self)
 
-        box = QGroupBox("Boyut")
+        box = QGroupBox(tr('Boyut'))
         f = QFormLayout(box)
         self.preset = QComboBox()
         for name, w, h in PRESETS:
             self.preset.addItem(name, (w, h))
         self.preset.currentIndexChanged.connect(self._preset)
-        f.addRow("Hazır boyut:", self.preset)
+        f.addRow(tr('Hazır boyut:'), self.preset)
         self.w = QDoubleSpinBox()
         self.w.setRange(5, 1000)
         self.w.setDecimals(1)
@@ -206,13 +206,13 @@ class LabelDialog(QDialog):
         self.h.setDecimals(1)
         self.h.setSuffix(" mm")
         self.h.setValue(label["height_mm"])
-        f.addRow("Genişlik:", self.w)
-        f.addRow("Yükseklik:", self.h)
+        f.addRow(tr('Genişlik:'), self.w)
+        f.addRow(tr('Yükseklik:'), self.h)
         self.dpi = QComboBox()
         for d in (152, 203, 300, 600):
-            self.dpi.addItem(f"{d} dpi ({round(d / 25.4)} nokta/mm)", d)
+            self.dpi.addItem(tr('{0} dpi ({1} nokta/mm)').format(d, round(d / 25.4)), d)
         self.dpi.setCurrentIndex(max(0, self.dpi.findData(int(label["dpi"]))))
-        f.addRow("Çözünürlük:", self.dpi)
+        f.addRow(tr('Çözünürlük:'), self.dpi)
         self.dots = QLabel()
         f.addRow("", self.dots)
         for s in (self.w, self.h):
@@ -223,39 +223,39 @@ class LabelDialog(QDialog):
         for p in printers:
             if p.kind != "cups":
                 self.from_printer.addItem(p.name, p)
-        b = QPushButton("Yazıcıdan al")
-        b.setToolTip("Baskı genişliği, etiket uzunluğu ve çözünürlüğü yazıcıdan okur")
+        b = QPushButton(tr('Yazıcıdan al'))
+        b.setToolTip(tr('Baskı genişliği, etiket uzunluğu ve çözünürlüğü yazıcıdan okur'))
         b.clicked.connect(self._read_printer)
         h.addWidget(self.from_printer, 1)
         h.addWidget(b)
         if self.from_printer.count():
-            f.addRow("Yazıcı:", h)
+            f.addRow(tr('Yazıcı:'), h)
         v.addWidget(box)
 
-        box = QGroupBox("Baskı (boş bırakılırsa yazıcı ayarı kullanılır)")
+        box = QGroupBox(tr('Baskı (boş bırakılırsa yazıcı ayarı kullanılır)'))
         f = QFormLayout(box)
         self.speed = QComboBox()
-        self.speed.addItem("Yazıcı ayarı", 0)
+        self.speed.addItem(tr('Yazıcı ayarı'), 0)
         for s in range(1, 15):
             self.speed.addItem(f"{s} ips", s)
         self.speed.setCurrentIndex(max(0, self.speed.findData(int(label.get("speed", 0)))))
-        f.addRow("Hız:", self.speed)
+        f.addRow(tr('Hız:'), self.speed)
         self.dark = QSpinBox()
         self.dark.setRange(-1, 30)
-        self.dark.setSpecialValueText("Yazıcı ayarı")
+        self.dark.setSpecialValueText(tr('Yazıcı ayarı'))
         self.dark.setValue(int(label.get("darkness", -1)))
-        f.addRow("Koyuluk:", self.dark)
+        f.addRow(tr('Koyuluk:'), self.dark)
         self.method = QComboBox()
-        for t, c in (("Yazıcı ayarı", ""), ("Termal transfer", "T"), ("Direkt termal", "D")):
+        for t, c in ((tr('Yazıcı ayarı'), ""), (tr('Termal transfer'), "T"), (tr('Direkt termal'), "D")):
             self.method.addItem(t, c)
         self.method.setCurrentIndex(max(0, self.method.findData(label.get("method", ""))))
-        f.addRow("Baskı yöntemi:", self.method)
+        f.addRow(tr('Baskı yöntemi:'), self.method)
         self.media = QComboBox()
-        for t, c in (("Yazıcı ayarı", ""), ("Boşluklu", "W"), ("Siyah işaretli", "M"), ("Sürekli", "N")):
+        for t, c in ((tr('Yazıcı ayarı'), ""), (tr('Boşluklu'), "W"), (tr('Siyah işaretli'), "M"), (tr('Sürekli'), "N")):
             self.media.addItem(t, c)
         self.media.setCurrentIndex(max(0, self.media.findData(label.get("media", ""))))
-        f.addRow("Medya:", self.media)
-        self.invert = QCheckBox("Etiketi 180° döndürerek bas (^POI)")
+        f.addRow(tr('Medya:'), self.media)
+        self.invert = QCheckBox(tr('Etiketi 180° döndürerek bas (^POI)'))
         self.invert.setChecked(bool(label.get("invert")))
         f.addRow(self.invert)
         self.hx = QSpinBox()
@@ -269,7 +269,7 @@ class LabelDialog(QDialog):
         hh.addWidget(self.hx)
         hh.addWidget(QLabel("Y"))
         hh.addWidget(self.hy)
-        f.addRow("Kaydırma (^LH, nokta):", hh)
+        f.addRow(tr('Kaydırma (^LH, nokta):'), hh)
         v.addWidget(box)
 
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -286,7 +286,7 @@ class LabelDialog(QDialog):
 
     def _upd(self):
         d = self.dpi.currentData()
-        self.dots.setText(f"= {mm_to_dots(self.w.value(), d)} × {mm_to_dots(self.h.value(), d)} nokta")
+        self.dots.setText(tr('= {0} × {1} nokta').format(mm_to_dots(self.w.value(), d), mm_to_dots(self.h.value(), d)))
 
     def _read_printer(self):
         cfg = self.from_printer.currentData()
@@ -310,9 +310,9 @@ class LabelDialog(QDialog):
                 if ll:
                     self.h.setValue(round(dots_to_mm(int(ll), d), 1))
             except ValueError:
-                QMessageBox.warning(self, "Yazıcı", f"Beklenmeyen yanıt: {r}")
+                QMessageBox.warning(self, tr('Yazıcı'), tr('Beklenmeyen yanıt: {0}').format(r))
 
-        run_async(fn, done, lambda m: QMessageBox.critical(self, "Yazıcı", m))
+        run_async(fn, done, lambda m: QMessageBox.critical(self, tr('Yazıcı'), m))
 
     def label(self):
         return {"width_mm": self.w.value(), "height_mm": self.h.value(), "dpi": self.dpi.currentData(),
@@ -337,34 +337,32 @@ class PrintDialog(QDialog):
     def __init__(self, scene, parent=None):
         super().__init__(parent)
         self.scene = scene
-        self.setWindowTitle("Yazdır")
+        self.setWindowTitle(tr('Yazdır'))
         self.resize(560, 520)
         v = QVBoxLayout(self)
         f = QFormLayout()
         self.printer = QComboBox()
         for p in all_printers():
             self.printer.addItem(f"{p.name}  —  {p.describe()}", p)
-        f.addRow("Yazıcı:", self.printer)
+        f.addRow(tr('Yazıcı:'), self.printer)
         self.copies = QSpinBox()
         self.copies.setRange(1, 99999)
-        f.addRow("Kopya (her etiket için):", self.copies)
+        f.addRow(tr('Kopya (her etiket için):'), self.copies)
         v.addLayout(f)
 
         self.vars = scene.variables()
-        builtin = {"TARIH", "SAAT", "DATE", "TIME", "SAYAC"}
+        builtin = {"TARIH", "SAAT", "DATE", "TIME", "SAYAC", "COUNTER"}
         user_vars = [x for x in self.vars if x not in builtin]
 
-        box = QGroupBox("Değişkenler")
+        box = QGroupBox(tr('Değişkenler'))
         bv = QVBoxLayout(box)
         if not self.vars:
-            bv.addWidget(QLabel("Tasarımda {DEĞİŞKEN} yok. Metin/barkod içine {AD}, {SAYAC}, {TARIH} gibi "
-                                "alanlar yazarak değişkenli baskı yapabilirsiniz."))
+            bv.addWidget(QLabel(tr('Tasarımda {DEĞİŞKEN} yok. Metin/barkod içine {AD}, {SAYAC}, {TARIH} gibi alanlar yazarak değişkenli baskı yapabilirsiniz.')))
         else:
-            bv.addWidget(QLabel("Hazır: {TARIH} {SAAT} {DATE} {TIME} {SAYAC}. Diğerleri aşağıdan elle ya da CSV "
-                                "dosyasından doldurulur (sütun adları değişken adlarıyla eşleşmeli)."))
+            bv.addWidget(QLabel(tr('Hazır: {TARIH} {SAAT} {DATE} {TIME} {SAYAC}. Diğerleri aşağıdan elle ya da CSV dosyasından doldurulur (sütun adları değişken adlarıyla eşleşmeli).')))
         h = QHBoxLayout()
         self.csv_path = QLineEdit()
-        self.csv_path.setPlaceholderText("CSV dosyası (isteğe bağlı) — her satır bir etiket")
+        self.csv_path.setPlaceholderText(tr('CSV dosyası (isteğe bağlı) — her satır bir etiket'))
         h.addWidget(self.csv_path, 1)
         b = QPushButton("CSV…")
         b.clicked.connect(self._pick_csv)
@@ -376,9 +374,9 @@ class PrintDialog(QDialog):
         self.table.setVisible(bool(user_vars))
         bv.addWidget(self.table)
         hb = QHBoxLayout()
-        b1 = QPushButton("Satır ekle")
+        b1 = QPushButton(tr('Satır ekle'))
         b1.clicked.connect(lambda: self.table.insertRow(self.table.rowCount()))
-        b2 = QPushButton("Satır sil")
+        b2 = QPushButton(tr('Satır sil'))
         b2.clicked.connect(lambda: self.table.removeRow(self.table.currentRow()) if self.table.rowCount() > 1 else None)
         hb.addWidget(b1)
         hb.addWidget(b2)
@@ -387,34 +385,34 @@ class PrintDialog(QDialog):
             bv.addLayout(hb)
         self.user_vars = user_vars
         hs = QHBoxLayout()
-        hs.addWidget(QLabel("{SAYAC} başlangıç:"))
+        hs.addWidget(QLabel(tr('Sayaç başlangıç:')))
         self.cstart = QSpinBox()
         self.cstart.setRange(-10 ** 9, 10 ** 9)
         self.cstart.setValue(1)
         hs.addWidget(self.cstart)
-        hs.addWidget(QLabel("artış:"))
+        hs.addWidget(QLabel(tr('artış:')))
         self.cstep = QSpinBox()
         self.cstep.setRange(-10 ** 6, 10 ** 6)
         self.cstep.setValue(1)
         hs.addWidget(self.cstep)
-        hs.addWidget(QLabel("hane:"))
+        hs.addWidget(QLabel(tr('hane:')))
         self.cpad = QSpinBox()
         self.cpad.setRange(0, 20)
         hs.addWidget(self.cpad)
         self.ccount = QSpinBox()
         self.ccount.setRange(1, 99999)
-        hs.addWidget(QLabel("adet:"))
+        hs.addWidget(QLabel(tr('adet:')))
         hs.addWidget(self.ccount)
         hs.addStretch(1)
-        if "SAYAC" in self.vars:
+        if self._has_counter():
             bv.addLayout(hs)
         v.addWidget(box)
 
         self.summary = QLabel()
         v.addWidget(self.summary)
         bb = QDialogButtonBox()
-        self.btn_print = bb.addButton("Yazdır", QDialogButtonBox.ButtonRole.AcceptRole)
-        bzpl = bb.addButton("ZPL kaydet…", QDialogButtonBox.ButtonRole.ActionRole)
+        self.btn_print = bb.addButton(tr('Yazdır'), QDialogButtonBox.ButtonRole.AcceptRole)
+        bzpl = bb.addButton(tr('ZPL kaydet…'), QDialogButtonBox.ButtonRole.ActionRole)
         bb.addButton(QDialogButtonBox.StandardButton.Cancel)
         bb.accepted.connect(self._print)
         bb.rejected.connect(self.reject)
@@ -426,8 +424,11 @@ class PrintDialog(QDialog):
         self.csv_path.textChanged.connect(self._summary)
         self._summary()
 
+    def _has_counter(self):
+        return "SAYAC" in self.vars or "COUNTER" in self.vars
+
     def _pick_csv(self):
-        path, _ = QFileDialog.getOpenFileName(self, "CSV seç", "", "CSV (*.csv *.txt);;Tüm dosyalar (*)")
+        path, _ = QFileDialog.getOpenFileName(self, tr('CSV seç'), "", tr('CSV (*.csv *.txt);;Tüm dosyalar (*)'))
         if path:
             self.csv_path.setText(path)
 
@@ -456,14 +457,16 @@ class PrintDialog(QDialog):
     def _expanded(self):
         """Her etiket için değer sözlükleri (sayaç dahil)."""
         recs = self._records()
-        if "SAYAC" in self.vars:
+        if self._has_counter():
             n = self.ccount.value() if len(recs) <= 1 else len(recs)
             base = recs[0] if len(recs) == 1 else None
             out = []
             for i in range(n):
                 rec = dict(base if base is not None else recs[i])
                 val = self.cstart.value() + i * self.cstep.value()
-                rec.setdefault("SAYAC", str(val).zfill(self.cpad.value()) if self.cpad.value() else str(val))
+                txt = str(val).zfill(self.cpad.value()) if self.cpad.value() else str(val)
+                rec.setdefault("SAYAC", txt)
+                rec.setdefault("COUNTER", txt)
                 out.append(rec)
             return out
         return recs
@@ -471,10 +474,9 @@ class PrintDialog(QDialog):
     def _summary(self):
         try:
             n = len(self._expanded())
-            self.summary.setText(f"<b>{n}</b> farklı etiket × {self.copies.value()} kopya = "
-                                 f"<b>{n * self.copies.value()}</b> etiket basılacak.")
+            self.summary.setText(tr('<b>{0}</b> farklı etiket × {1} kopya = <b>{2}</b> etiket basılacak.').format(n, self.copies.value(), n * self.copies.value()))
         except Exception as e:  # noqa: BLE001
-            self.summary.setText(f"<span style='color:#c00'>CSV okunamadı: {e}</span>")
+            self.summary.setText(tr("<span style='color:#c00'>CSV okunamadı: {0}</span>").format(e))
 
     def build_zpl(self):
         recs = self._expanded()
@@ -486,7 +488,7 @@ class PrintDialog(QDialog):
         except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "ZPL", str(e))
             return
-        path, _ = QFileDialog.getSaveFileName(self, "ZPL kaydet", "etiket.zpl", "ZPL (*.zpl *.prn)")
+        path, _ = QFileDialog.getSaveFileName(self, tr('ZPL kaydet'), tr('etiket.zpl'), "ZPL (*.zpl *.prn)")
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(data)
@@ -494,12 +496,12 @@ class PrintDialog(QDialog):
     def _print(self):
         cfg = self.printer.currentData()
         if not cfg:
-            QMessageBox.warning(self, "Yazıcı", "Yazıcı yok. Zebra Kurulum Aracı ile yazıcı ekleyin.")
+            QMessageBox.warning(self, tr('Yazıcı'), tr('Yazıcı yok. Zebra Kurulum Aracı ile yazıcı ekleyin.'))
             return
         try:
             data = self.build_zpl()
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Hata", str(e))
+            QMessageBox.critical(self, tr('Hata'), str(e))
             return
         self.btn_print.setEnabled(False)
 
@@ -512,6 +514,6 @@ class PrintDialog(QDialog):
 
         def err(m):
             self.btn_print.setEnabled(True)
-            QMessageBox.critical(self, "Yazdırma hatası", m)
+            QMessageBox.critical(self, tr('Yazdırma hatası'), m)
 
         run_async(fn, done, err)

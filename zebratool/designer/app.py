@@ -16,10 +16,12 @@ from .. import printers as P
 from .document import LabelScene, dots_to_mm, mm_to_dots
 from .items import TextItem, BarcodeItem, BoxItem, LineItem, EllipseItem, ImageItem, LabelItem, item_from_dict
 from .panels import PropertyPanel, LabelDialog, PrintDialog
+from ..qtutil import add_language_menu
+from ..i18n import tr, LANG
 
 APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ICON_PATH = os.path.join(APP_DIR, "icons", "zebra-designer.svg")
-FILE_FILTER = "Zebra etiketi (*.zlbl);;Tüm dosyalar (*)"
+FILE_FILTER = tr('Zebra etiketi (*.zlbl);;Tüm dosyalar (*)')
 
 
 class LabelView(QGraphicsView):
@@ -118,7 +120,7 @@ class DesignerWindow(QMainWindow):
 
         self.props = PropertyPanel()
         self.props.changed.connect(lambda *_: self.schedule_commit())
-        dock = QDockWidget("Özellikler", self)
+        dock = QDockWidget(tr('Özellikler'), self)
         dock.setObjectName("props")
         dock.setWidget(self.props)
         dock.setMinimumWidth(300)
@@ -156,80 +158,82 @@ class DesignerWindow(QMainWindow):
 
     def _build_actions(self):
         mb = self.menuBar()
-        fm = mb.addMenu("&Dosya")
-        self.a_new = self._act("Yeni", self.new_doc, QKeySequence.StandardKey.New, icon="document-new")
-        self.a_open = self._act("Aç…", self.open_doc, QKeySequence.StandardKey.Open, icon="document-open")
-        self.a_save = self._act("Kaydet", self.save_doc, QKeySequence.StandardKey.Save, icon="document-save")
-        self.a_saveas = self._act("Farklı kaydet…", self.save_as, QKeySequence.StandardKey.SaveAs,
+        fm = mb.addMenu(tr('&Dosya'))
+        self.a_new = self._act(tr('Yeni'), self.new_doc, QKeySequence.StandardKey.New, icon="document-new")
+        self.a_open = self._act(tr('Aç…'), self.open_doc, QKeySequence.StandardKey.Open, icon="document-open")
+        self.a_save = self._act(tr('Kaydet'), self.save_doc, QKeySequence.StandardKey.Save, icon="document-save")
+        self.a_saveas = self._act(tr('Farklı kaydet…'), self.save_as, QKeySequence.StandardKey.SaveAs,
                                   icon="document-save-as")
-        self.a_export = self._act("ZPL olarak dışa aktar…", self.export_zpl, "Ctrl+E")
-        self.a_png = self._act("PNG olarak dışa aktar…", self.export_png)
-        self.a_print = self._act("Yazdır…", self.print_doc, QKeySequence.StandardKey.Print,
+        self.a_export = self._act(tr('ZPL olarak dışa aktar…'), self.export_zpl, "Ctrl+E")
+        self.a_png = self._act(tr('PNG olarak dışa aktar…'), self.export_png)
+        self.a_print = self._act(tr('Yazdır…'), self.print_doc, QKeySequence.StandardKey.Print,
                                  icon="document-print")
-        self.a_label = self._act("Etiket ayarları…", self.label_settings, "Ctrl+L", icon="document-properties")
+        self.a_label = self._act(tr('Etiket ayarları…'), self.label_settings, "Ctrl+L", icon="document-properties")
         for a in (self.a_new, self.a_open, self.a_save, self.a_saveas, None, self.a_label, None,
                   self.a_export, self.a_png, None, self.a_print):
             fm.addSeparator() if a is None else fm.addAction(a)
-        self.recent_menu = fm.addMenu("Son açılanlar")
+        self.recent_menu = fm.addMenu(tr('Son açılanlar'))
         self._update_recent()
         fm.addSeparator()
-        fm.addAction(self._act("Kurulum Aracını aç", self._open_setup))
-        fm.addAction(self._act("Çıkış", self.close, QKeySequence.StandardKey.Quit))
+        fm.addAction(self._act(tr('Kurulum Aracını aç'), self._open_setup))
+        fm.addAction(self._act(tr('Çıkış'), self.close, QKeySequence.StandardKey.Quit))
 
-        em = mb.addMenu("Dü&zen")
-        self.a_undo = self._act("Geri al", self.undo, QKeySequence.StandardKey.Undo, icon="edit-undo")
-        self.a_redo = self._act("Yinele", self.redo, QKeySequence.StandardKey.Redo, icon="edit-redo")
-        self.a_cut = self._act("Kes", self.cut, QKeySequence.StandardKey.Cut)
-        self.a_copy = self._act("Kopyala", self.copy, QKeySequence.StandardKey.Copy)
-        self.a_paste = self._act("Yapıştır", self.paste, QKeySequence.StandardKey.Paste)
-        self.a_dup = self._act("Çoğalt", self.duplicate, "Ctrl+D")
-        self.a_del = self._act("Sil", self.delete_selected, QKeySequence.StandardKey.Delete, icon="edit-delete")
-        self.a_all = self._act("Tümünü seç", lambda: [i.setSelected(True) for i in self.scene.label_items()],
+        em = mb.addMenu(tr('Dü&zen'))
+        self.a_undo = self._act(tr('Geri al'), self.undo, QKeySequence.StandardKey.Undo, icon="edit-undo")
+        self.a_redo = self._act(tr('Yinele'), self.redo, QKeySequence.StandardKey.Redo, icon="edit-redo")
+        self.a_cut = self._act(tr('Kes'), self.cut, QKeySequence.StandardKey.Cut)
+        self.a_copy = self._act(tr('Kopyala'), self.copy, QKeySequence.StandardKey.Copy)
+        self.a_paste = self._act(tr('Yapıştır'), self.paste, QKeySequence.StandardKey.Paste)
+        self.a_dup = self._act(tr('Çoğalt'), self.duplicate, "Ctrl+D")
+        self.a_del = self._act(tr('Sil'), self.delete_selected, QKeySequence.StandardKey.Delete, icon="edit-delete")
+        self.a_all = self._act(tr('Tümünü seç'), lambda: [i.setSelected(True) for i in self.scene.label_items()],
                                QKeySequence.StandardKey.SelectAll)
-        self.a_front = self._act("Öne getir", lambda: self.z_order(True), "Ctrl+]", icon="go-top")
-        self.a_back = self._act("Arkaya gönder", lambda: self.z_order(False), "Ctrl+[", icon="go-bottom")
+        self.a_front = self._act(tr('Öne getir'), lambda: self.z_order(True), "Ctrl+]", icon="go-top")
+        self.a_back = self._act(tr('Arkaya gönder'), lambda: self.z_order(False), "Ctrl+[", icon="go-bottom")
         for a in (self.a_undo, self.a_redo, None, self.a_cut, self.a_copy, self.a_paste, self.a_dup, self.a_del,
                   None, self.a_all, None, self.a_front, self.a_back):
             em.addSeparator() if a is None else em.addAction(a)
-        am = em.addMenu("Hizala")
-        for text, mode in (("Sola", "left"), ("Yatay ortala", "hcenter"), ("Sağa", "right"),
-                           ("Üste", "top"), ("Dikey ortala", "vcenter"), ("Alta", "bottom"),
-                           ("Etikette yatay ortala", "label_h"), ("Etikette dikey ortala", "label_v")):
+        am = em.addMenu(tr('Hizala'))
+        for text, mode in ((tr('Sola'), "left"), (tr('Yatay ortala'), "hcenter"), (tr('Sağa'), "right"),
+                           (tr('Üste'), "top"), (tr('Dikey ortala'), "vcenter"), (tr('Alta'), "bottom"),
+                           (tr('Etikette yatay ortala'), "label_h"), (tr('Etikette dikey ortala'), "label_v")):
             am.addAction(self._act(text, lambda _=False, m=mode: self.align(m)))
 
-        im = mb.addMenu("&Ekle")
-        self.a_text = self._act("Metin", lambda: self.add_item(TextItem()), "T", icon="insert-text")
-        self.a_barcode = self._act("Barkod", lambda: self.add_item(BarcodeItem()), "B")
-        self.a_qr = self._act("QR kod", lambda: self.add_item(
+        im = mb.addMenu(tr('&Ekle'))
+        self.a_text = self._act(tr('Metin'), lambda: self.add_item(TextItem()), "T", icon="insert-text")
+        self.a_barcode = self._act(tr('Barkod'), lambda: self.add_item(BarcodeItem()), "B")
+        self.a_qr = self._act(tr('QR kod'), lambda: self.add_item(
             BarcodeItem({"symbology": "qr", "data": "https://example.com", "module": 5})), "Q")
-        self.a_box = self._act("Kutu", lambda: self.add_item(BoxItem()), "R")
-        self.a_line = self._act("Çizgi", lambda: self.add_item(LineItem()), "L")
-        self.a_ellipse = self._act("Elips", lambda: self.add_item(EllipseItem()), "E")
-        self.a_image = self._act("Resim…", self.add_image, "I", icon="insert-image")
+        self.a_box = self._act(tr('Kutu'), lambda: self.add_item(BoxItem()), "R")
+        self.a_line = self._act(tr('Çizgi'), lambda: self.add_item(LineItem()), "L")
+        self.a_ellipse = self._act(tr('Elips'), lambda: self.add_item(EllipseItem()), "E")
+        self.a_image = self._act(tr('Resim…'), self.add_image, "I", icon="insert-image")
         for a in (self.a_text, self.a_barcode, self.a_qr, self.a_box, self.a_line, self.a_ellipse, self.a_image):
             im.addAction(a)
         im.addSeparator()
-        vm = im.addMenu("Değişken alan ekle")
-        for name in ("SAYAC", "TARIH", "SAAT", "AD", "URUN", "FIYAT"):
+        vm = im.addMenu(tr('Değişken alan ekle'))
+        names = ("SAYAC", "TARIH", "SAAT", "AD", "URUN", "FIYAT") if LANG == "tr" else \
+            ("COUNTER", "DATE", "TIME", "NAME", "PRODUCT", "PRICE")
+        for name in names:
             vm.addAction(self._act("{" + name + "}", lambda _=False, n=name: self.add_item(TextItem({"text": "{" + n + "}"}))))
 
-        wm = mb.addMenu("&Görünüm")
-        self.a_zin = self._act("Yakınlaştır", lambda: self.view.zoom_by(1.25), QKeySequence.StandardKey.ZoomIn,
+        wm = mb.addMenu(tr('&Görünüm'))
+        self.a_zin = self._act(tr('Yakınlaştır'), lambda: self.view.zoom_by(1.25), QKeySequence.StandardKey.ZoomIn,
                                icon="zoom-in")
-        self.a_zout = self._act("Uzaklaştır", lambda: self.view.zoom_by(0.8), QKeySequence.StandardKey.ZoomOut,
+        self.a_zout = self._act(tr('Uzaklaştır'), lambda: self.view.zoom_by(0.8), QKeySequence.StandardKey.ZoomOut,
                                 icon="zoom-out")
-        self.a_fit = self._act("Sığdır", self.view.fit, "Ctrl+0", icon="zoom-fit-best")
-        self.a_actual = self._act("Gerçek boyut", self.actual_size, "Ctrl+1", icon="zoom-original")
-        self.a_grid = self._act("Izgara", self.toggle_grid, "Ctrl+'")
+        self.a_fit = self._act(tr('Sığdır'), self.view.fit, "Ctrl+0", icon="zoom-fit-best")
+        self.a_actual = self._act(tr('Gerçek boyut'), self.actual_size, "Ctrl+1", icon="zoom-original")
+        self.a_grid = self._act(tr('Izgara'), self.toggle_grid, "Ctrl+'")
         self.a_grid.setCheckable(True)
         self.a_grid.setChecked(True)
-        self.a_snap = self._act("Izgaraya yasla", self.toggle_snap, "Ctrl+Shift+'")
+        self.a_snap = self._act(tr('Izgaraya yasla'), self.toggle_snap, "Ctrl+Shift+'")
         self.a_snap.setCheckable(True)
         self.a_snap.setChecked(True)
-        self.a_zpl = self._act("ZPL kodunu göster", self.show_zpl, "F5")
+        self.a_zpl = self._act(tr('ZPL kodunu göster'), self.show_zpl, "F5")
         for a in (self.a_zin, self.a_zout, self.a_fit, self.a_actual, None, self.a_grid, self.a_snap, None, self.a_zpl):
             wm.addSeparator() if a is None else wm.addAction(a)
-        gm = wm.addMenu("Izgara aralığı")
+        gm = wm.addMenu(tr('Izgara aralığı'))
         grp = QActionGroup(self)
         for g in (0.5, 1.0, 2.0, 2.5, 5.0):
             a = QAction(f"{g:g} mm", self, checkable=True)
@@ -238,40 +242,41 @@ class DesignerWindow(QMainWindow):
             grp.addAction(a)
             gm.addAction(a)
 
-        hm = mb.addMenu("&Yardım")
-        hm.addAction(self._act("Kısayollar ve ipuçları", self.show_help, "F1"))
+        add_language_menu(self, mb, "zebratool.designer", lambda: [self.path] if self.path else [])
+        hm = mb.addMenu(tr('&Yardım'))
+        hm.addAction(self._act(tr('Kısayollar ve ipuçları'), self.show_help, "F1"))
 
-        tb = QToolBar("Dosya")
+        tb = QToolBar(tr('Dosya'))
         tb.setObjectName("tb_file")
         for a in (self.a_new, self.a_open, self.a_save, None, self.a_undo, self.a_redo, None, self.a_label):
             tb.addSeparator() if a is None else tb.addAction(a)
         self.addToolBar(tb)
-        tb = QToolBar("Ekle")
+        tb = QToolBar(tr('Ekle'))
         tb.setObjectName("tb_insert")
         tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         for a in (self.a_text, self.a_barcode, self.a_qr, self.a_box, self.a_line, self.a_ellipse, self.a_image,
                   None, self.a_del, self.a_front, self.a_back):
             tb.addSeparator() if a is None else tb.addAction(a)
         self.addToolBar(tb)
-        tb = QToolBar("Görünüm")
+        tb = QToolBar(tr('Görünüm'))
         tb.setObjectName("tb_view")
         for a in (self.a_zout, self.a_zin, self.a_fit, None, self.a_zpl):
             tb.addSeparator() if a is None else tb.addAction(a)
-        self.a_print.setText("Yazdır…")
+        self.a_print.setText(tr('Yazdır…'))
         tb.addAction(self.a_print)
         self.addToolBar(tb)
 
     # ------------------------------------------------------------- belge
     def _title(self):
-        name = os.path.basename(self.path) if self.path else "Adsız"
-        self.setWindowTitle(f"{'*' if self.dirty else ''}{name} — Zebra Etiket Tasarımcısı")
+        name = os.path.basename(self.path) if self.path else tr('Adsız')
+        self.setWindowTitle(tr('{0}{1} — Zebra Etiket Tasarımcısı').format('*' if self.dirty else '', name))
         L = self.scene.label
         self.size_label.setText(f"{L['width_mm']:g} × {L['height_mm']:g} mm · {L['dpi']} dpi")
 
     def _confirm_discard(self):
         if not self.dirty:
             return True
-        r = QMessageBox.question(self, "Kaydedilmemiş değişiklikler", "Değişiklikler kaydedilsin mi?",
+        r = QMessageBox.question(self, tr('Kaydedilmemiş değişiklikler'), tr('Değişiklikler kaydedilsin mi?'),
                                  QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard
                                  | QMessageBox.StandardButton.Cancel)
         if r == QMessageBox.StandardButton.Save:
@@ -297,7 +302,7 @@ class DesignerWindow(QMainWindow):
     def open_doc(self):
         if not self._confirm_discard():
             return
-        path, _ = QFileDialog.getOpenFileName(self, "Etiket aç", self.settings.value("dir", ""), FILE_FILTER)
+        path, _ = QFileDialog.getOpenFileName(self, tr('Etiket aç'), self.settings.value("dir", ""), FILE_FILTER)
         if path:
             self.open_path(path)
 
@@ -305,7 +310,7 @@ class DesignerWindow(QMainWindow):
         try:
             self.scene.load(path)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Açılamadı", f"{path}\n\n{e}")
+            QMessageBox.critical(self, tr('Açılamadı'), f"{path}\n\n{e}")
             return
         self.path = path
         self.settings.setValue("dir", os.path.dirname(path))
@@ -319,7 +324,7 @@ class DesignerWindow(QMainWindow):
         try:
             self.scene.save(self.path)
         except OSError as e:
-            QMessageBox.critical(self, "Kaydedilemedi", str(e))
+            QMessageBox.critical(self, tr('Kaydedilemedi'), str(e))
             return False
         self.dirty = False
         self._add_recent(self.path)
@@ -327,8 +332,8 @@ class DesignerWindow(QMainWindow):
         return True
 
     def save_as(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Farklı kaydet", self.path or os.path.join(
-            self.settings.value("dir", ""), "etiket.zlbl"), FILE_FILTER)
+        path, _ = QFileDialog.getSaveFileName(self, tr('Farklı kaydet'), self.path or os.path.join(
+            self.settings.value("dir", ""), tr('etiket.zlbl')), FILE_FILTER)
         if not path:
             return False
         if not path.endswith(".zlbl"):
@@ -440,15 +445,15 @@ class DesignerWindow(QMainWindow):
         self.commit()
 
     def add_image(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Resim seç", self.settings.value("imgdir", ""),
-                                              "Resimler (*.png *.jpg *.jpeg *.bmp *.gif *.svg *.webp)")
+        path, _ = QFileDialog.getOpenFileName(self, tr('Resim seç'), self.settings.value("imgdir", ""),
+                                              tr('Resimler (*.png *.jpg *.jpeg *.bmp *.gif *.svg *.webp)'))
         if not path:
             return
         self.settings.setValue("imgdir", os.path.dirname(path))
         try:
             self.add_item(ImageItem.from_file(path, self.scene.dpi))
         except ValueError as e:
-            QMessageBox.warning(self, "Resim", str(e))
+            QMessageBox.warning(self, tr('Resim'), str(e))
 
     def delete_selected(self):
         sel = self._selected()
@@ -536,7 +541,7 @@ class DesignerWindow(QMainWindow):
 
     # ------------------------------------------------------------- görünüm
     def update_zoom_label(self):
-        self.zoom_label.setText(f"Yakınlık: %{self.view.transform().m11() * 100:.0f}")
+        self.zoom_label.setText(tr('Yakınlık: %{0:.0f}').format(self.view.transform().m11() * 100))
         self.scene.update()
 
     def actual_size(self):
@@ -570,9 +575,8 @@ class DesignerWindow(QMainWindow):
         if d.exec():
             new = d.label()
             if new["dpi"] != self.scene.dpi and self.scene.label_items():
-                r = QMessageBox.question(self, "Çözünürlük değişti",
-                                         "Öğeler yeni çözünürlüğe göre ölçeklensin mi?\n"
-                                         "(Hayır derseniz nokta değerleri aynı kalır.)")
+                r = QMessageBox.question(self, tr('Çözünürlük değişti'),
+                                         tr('Öğeler yeni çözünürlüğe göre ölçeklensin mi?\n(Hayır derseniz nokta değerleri aynı kalır.)'))
                 if r != QMessageBox.StandardButton.Yes:
                     self.scene.label["dpi"] = new["dpi"]
             self.scene.set_label(new)
@@ -589,7 +593,7 @@ class DesignerWindow(QMainWindow):
             QMessageBox.critical(self, "ZPL", str(e))
             return
         d = QDialog(self)
-        d.setWindowTitle("ZPL kodu")
+        d.setWindowTitle(tr('ZPL kodu'))
         d.resize(700, 500)
         v = QVBoxLayout(d)
         t = QPlainTextEdit(code)
@@ -601,19 +605,19 @@ class DesignerWindow(QMainWindow):
         t.setFont(f)
         v.addWidget(t)
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        cp = bb.addButton("Panoya kopyala", QDialogButtonBox.ButtonRole.ActionRole)
+        cp = bb.addButton(tr('Panoya kopyala'), QDialogButtonBox.ButtonRole.ActionRole)
         cp.clicked.connect(lambda: QApplication.clipboard().setText(code))
         bb.rejected.connect(d.reject)
         v.addWidget(bb)
         d.exec()
 
     def export_zpl(self):
-        base = os.path.splitext(self.path)[0] + ".zpl" if self.path else "etiket.zpl"
-        path, _ = QFileDialog.getSaveFileName(self, "ZPL olarak dışa aktar", base, "ZPL (*.zpl *.prn)")
+        base = os.path.splitext(self.path)[0] + ".zpl" if self.path else tr('etiket.zpl')
+        path, _ = QFileDialog.getSaveFileName(self, tr('ZPL olarak dışa aktar'), base, "ZPL (*.zpl *.prn)")
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(self.scene.zpl())
-            self.statusBar().showMessage(f"Kaydedildi: {path}", 5000)
+            self.statusBar().showMessage(tr('Kaydedildi: {0}').format(path), 5000)
 
     def render_image(self):
         from PyQt6.QtCore import QRectF
@@ -642,39 +646,27 @@ class DesignerWindow(QMainWindow):
         return img
 
     def export_png(self):
-        base = os.path.splitext(self.path)[0] + ".png" if self.path else "etiket.png"
-        path, _ = QFileDialog.getSaveFileName(self, "PNG olarak dışa aktar", base, "PNG (*.png)")
+        base = os.path.splitext(self.path)[0] + ".png" if self.path else tr('etiket.png')
+        path, _ = QFileDialog.getSaveFileName(self, tr('PNG olarak dışa aktar'), base, "PNG (*.png)")
         if path:
             img = self.render_image()
             dpm = int(round(self.scene.dpi / 0.0254))
             img.setDotsPerMeterX(dpm)
             img.setDotsPerMeterY(dpm)
             img.save(path)
-            self.statusBar().showMessage(f"Kaydedildi: {path}", 5000)
+            self.statusBar().showMessage(tr('Kaydedildi: {0}').format(path), 5000)
 
     def print_doc(self):
         d = PrintDialog(self.scene, self)
         if d.exec():
-            self.statusBar().showMessage("Yazıcıya gönderildi.", 5000)
+            self.statusBar().showMessage(tr('Yazıcıya gönderildi.'), 5000)
 
     def _open_setup(self):
         import subprocess
         subprocess.Popen([sys.executable, "-m", "zebratool.setup_app"], cwd=os.path.dirname(APP_DIR))
 
     def show_help(self):
-        QMessageBox.information(self, "Kısayollar ve ipuçları", """
-<b>Öğe ekleme:</b> T metin · B barkod · Q QR · R kutu · L çizgi · E elips · I resim<br>
-<b>Taşıma:</b> sürükle; ok tuşları 1 nokta, Shift+ok 10 nokta<br>
-<b>Boyutlandırma:</b> kutu/çizgi/elips/resimde sağ alt tutamaç<br>
-<b>Yakınlaştırma:</b> Ctrl+tekerlek · Ctrl+0 sığdır · Ctrl+1 gerçek boyut · orta tuşla kaydır<br>
-<b>Düzen:</b> Ctrl+Z/Ctrl+Y · Ctrl+C/V/X · Ctrl+D çoğalt · Del sil · Ctrl+] / Ctrl+[ öne/arkaya<br>
-<b>ZPL:</b> F5 kodu göster · Ctrl+E dışa aktar · Ctrl+P yazdır<br><br>
-<b>Değişkenler:</b> Metin veya barkod verisine <code>{AD}</code> gibi alanlar yazın. Yazdırırken elle,
-CSV dosyasından ya da sayaçla doldurulur. Hazır alanlar: <code>{SAYAC}</code>, <code>{TARIH}</code>,
-<code>{SAAT}</code>, <code>{DATE}</code>, <code>{TIME}</code>.<br><br>
-<b>Fontlar:</b> "Zebra 0" yazıcının kendi fontudur (hızlı, keskin). Başka bir font seçerseniz metin
-grafik olarak gönderilir; ekranda ne görürseniz o basılır (Türkçe karakterler dahil).
-""")
+        QMessageBox.information(self, tr('Kısayollar ve ipuçları'), tr('\n<b>Öğe ekleme:</b> T metin · B barkod · Q QR · R kutu · L çizgi · E elips · I resim<br>\n<b>Taşıma:</b> sürükle; ok tuşları 1 nokta, Shift+ok 10 nokta<br>\n<b>Boyutlandırma:</b> kutu/çizgi/elips/resimde sağ alt tutamaç<br>\n<b>Yakınlaştırma:</b> Ctrl+tekerlek · Ctrl+0 sığdır · Ctrl+1 gerçek boyut · orta tuşla kaydır<br>\n<b>Düzen:</b> Ctrl+Z/Ctrl+Y · Ctrl+C/V/X · Ctrl+D çoğalt · Del sil · Ctrl+] / Ctrl+[ öne/arkaya<br>\n<b>ZPL:</b> F5 kodu göster · Ctrl+E dışa aktar · Ctrl+P yazdır<br><br>\n<b>Değişkenler:</b> Metin veya barkod verisine <code>{AD}</code> gibi alanlar yazın. Yazdırırken elle,\nCSV dosyasından ya da sayaçla doldurulur. Hazır alanlar: <code>{SAYAC}</code>, <code>{TARIH}</code>,\n<code>{SAAT}</code>, <code>{DATE}</code>, <code>{TIME}</code>.<br><br>\n<b>Fontlar:</b> "Zebra 0" yazıcının kendi fontudur (hızlı, keskin). Başka bir font seçerseniz metin\ngrafik olarak gönderilir; ekranda ne görürseniz o basılır (Türkçe karakterler dahil).\n'))
 
 
 class _NoSelOption:
@@ -685,7 +677,7 @@ class _NoSelOption:
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Zebra Etiket Tasarımcısı")
+    app.setApplicationName(tr('Zebra Etiket Tasarımcısı'))
     app.setDesktopFileName("zebra-designer")
     path = sys.argv[1] if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]) else None
     w = DesignerWindow(path)

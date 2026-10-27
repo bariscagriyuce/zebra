@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass, asdict
+from .i18n import tr
 
 
 class ConnectionError_(Exception):
@@ -36,10 +37,10 @@ class PrinterConfig:
 
     def describe(self):
         if self.kind == "network":
-            return f"Ağ: {self.address}:{self.port}"
+            return tr('Ağ: {0}:{1}').format(self.address, self.port)
         if self.kind == "usb":
             return f"USB: {self.address}"
-        return f"CUPS: {self.address}"
+        return tr('CUPS: {0}').format(self.address)
 
 
 class Connection:
@@ -75,7 +76,7 @@ class Connection:
 
     def query(self, data, timeout=2.0, until=None) -> bytes:
         if not self.bidirectional:
-            raise ConnectionError_("Bu bağlantı türü yazıcıdan yanıt okuyamaz (yalnızca gönderim).")
+            raise ConnectionError_(tr('Bu bağlantı türü yazıcıdan yanıt okuyamaz (yalnızca gönderim).'))
         self.send(data)
         return self.read(timeout=timeout, until=until)
 
@@ -114,7 +115,7 @@ class NetworkConnection(Connection):
         try:
             self.sock = socket.create_connection((self.host, self.port), timeout=self.connect_timeout)
         except OSError as e:
-            raise ConnectionError_(f"{self.host}:{self.port} adresine bağlanılamadı: {e}") from e
+            raise ConnectionError_(tr('{0}:{1} adresine bağlanılamadı: {2}').format(self.host, self.port, e)) from e
 
     def close(self):
         if self.sock:
@@ -150,10 +151,9 @@ class UsbConnection(Connection):
             self.fd = os.open(self.device, os.O_RDWR | os.O_NONBLOCK)
         except PermissionError as e:
             raise ConnectionError_(
-                f"{self.device} için izin yok. Kullanıcınızı 'lp' grubuna ekleyin: "
-                f"sudo usermod -aG lp $USER (sonra oturumu kapatıp açın)") from e
+                tr("{0} için izin yok. Kullanıcınızı 'lp' grubuna ekleyin: sudo usermod -aG lp $USER (sonra oturumu kapatıp açın)").format(self.device)) from e
         except OSError as e:
-            raise ConnectionError_(f"{self.device} açılamadı: {e}") from e
+            raise ConnectionError_(tr('{0} açılamadı: {1}').format(self.device, e)) from e
 
     def close(self):
         if self.fd is not None:
@@ -171,7 +171,7 @@ class UsbConnection(Connection):
                 view = view[n:]
             except BlockingIOError:
                 if time.monotonic() > deadline:
-                    raise ConnectionError_("USB yazma zaman aşımı")
+                    raise ConnectionError_(tr('USB yazma zaman aşımı'))
                 select.select([], [self.fd], [], 0.5)
 
     def read(self, timeout=1.5, until=None):
@@ -216,7 +216,7 @@ class CupsConnection(Connection):
             r = subprocess.run(["lp", "-d", self.queue, "-o", "raw", path],
                                capture_output=True, text=True, timeout=30)
             if r.returncode != 0:
-                raise ConnectionError_(f"lp hatası: {r.stderr.strip() or r.stdout.strip()}")
+                raise ConnectionError_(tr('lp hatası: {0}').format(r.stderr.strip() or r.stdout.strip()))
         finally:
             os.unlink(path)
             self._buf = b""
@@ -232,4 +232,4 @@ def make_connection(cfg: PrinterConfig) -> Connection:
         return UsbConnection(cfg.address)
     if cfg.kind == "cups":
         return CupsConnection(cfg.address)
-    raise ValueError(f"Bilinmeyen bağlantı türü: {cfg.kind}")
+    raise ValueError(tr('Bilinmeyen bağlantı türü: {0}').format(cfg.kind))

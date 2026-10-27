@@ -5,6 +5,9 @@
 Windows'a özel **Zebra Setup Utilities** ve **ZebraDesigner 3** yerine CachyOS/Arch üzerinde çalışan iki
 uygulama. Python + PyQt6 ile yazıldı. Yazıcıyla doğrudan ZPL/SGD üzerinden konuşur, sürücü gerekmez.
 
+Arayüz **Türkçe** ve **İngilizce**dir. Dil, sistem diline göre seçilir; menüdeki **Dil / Language**
+ile değiştirilebilir (uygulama yeniden başlatılır).
+
 ## Kurulum
 
 ```bash
@@ -51,7 +54,8 @@ Kurmadan denemek için: `sh bin/zebra-setup` ve `sh bin/zebra-designer`.
   olarak gönderilir, böylece Türkçe karakterler dahil ekranda ne görünüyorsa o basılır.
 - Döndürme (0/90/180/270), paragraf (otomatik satır kaydırma, hizalama), ters baskı.
 - **Değişkenli baskı:** metin/barkod içine `{AD}`, `{FIYAT}` gibi alanlar; yazdırırken elle, CSV
-  dosyasından ya da sayaçla (`{SAYAC}`) doldurulur. Hazır alanlar: `{TARIH}`, `{SAAT}`, `{DATE}`, `{TIME}`.
+  dosyasından ya da sayaçla (`{SAYAC}` veya `{COUNTER}`) doldurulur. Hazır alanlar: `{TARIH}`, `{SAAT}`,
+  `{DATE}`, `{TIME}`.
 - Geri al/yinele, kopyala/yapıştır, hizalama, öne/arkaya.
 - Kaydetme biçimi `.zlbl` (JSON). ZPL ve PNG olarak dışa aktarma; F5 ile ZPL kodunu görme.
 - Etiket ayarlarında “Yazıcıdan al” ile etiket boyutu yazıcıdan okunur.
