@@ -1,5 +1,7 @@
 # ZebraTool — Linux için Zebra Kurulum Aracı ve Etiket Tasarımcısı
 
+**Türkçe** | [English](README.en.md)
+
 Windows'a özel **Zebra Setup Utilities** ve **ZebraDesigner 3** yerine CachyOS/Arch üzerinde çalışan iki
 uygulama. Python + PyQt6 ile yazıldı. Yazıcıyla doğrudan ZPL/SGD üzerinden konuşur, sürücü gerekmez.
 
@@ -66,3 +68,6 @@ ok tuşları 1 nokta, `Shift`+ok 10 nokta · `Ctrl`+tekerlek yakınlaştır · `
 - QR kod ZPL'de döndürülemez (yazıcı kısıtı).
 - ZebraDesigner `.nlbl` dosyaları açılamaz (kapalı biçim). ZPL içe aktarma yoktur.
 - Windows sürücüsüne özgü özellikler (RFID kodlama, veritabanı bağlantısı) yoktur.
+- Bazı eski yazıcılarda (ör. GT800) kontrol öneki `~` dışında bir karaktere değiştirilmiş olabilir. Bu
+  yazıcılar `~` komutlarına yanıt vermez; kurulum aracı ayarları `^HH` ile okur, uyarı gösterir ve öneki
+  `~` yapmak için bir düğme sunar.
