@@ -1,0 +1,6 @@
+#!/bin/sh
+# Zebra Etiket Tasarımcısı
+HERE="$(dirname "$(readlink -f "$0")")"
+ARGS=""
+[ -n "$1" ] && ARGS="$(readlink -f "$1")"
+cd "$HERE/.." && exec python3 -m zebratool.designer ${ARGS:+"$ARGS"}

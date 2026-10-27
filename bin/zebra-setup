@@ -1,0 +1,4 @@
+#!/bin/sh
+# Zebra Kurulum Aracı
+HERE="$(dirname "$(readlink -f "$0")")"
+cd "$HERE/.." && exec python3 -m zebratool.setup_app "$@"
