@@ -24,6 +24,11 @@ ALIGNS = [(tr('Sol'), "L"), (tr('Orta'), "C"), (tr('Sağ'), "R"), (tr('İki yana
 
 _zebra_family = None
 
+# Yazıcının 0 fontunda (^A0N,h,h) bu metnin genişliği yaklaşık ZEBRA0_REF_WIDTH × h noktadır.
+# ZD230 çıktısından ölçüldü (h=42 için ~220 nokta); önizleme fontu buna göre genişletilir.
+ZEBRA0_REF_TEXT = "VENCIMENTO:"
+ZEBRA0_REF_WIDTH = 5.25
+
 
 def zebra_font_family():
     """Yazıcının 0 fontuna (CG Triumvirate Bold Condensed) en yakın sistem fontu."""
@@ -314,9 +319,21 @@ class TextItem(LabelItem):
         fm = QFontMetricsF(f)
         if fm.height() > 0:
             f.setPixelSize(max(1, int(round(h * h / fm.height()))))
-        w = int(self.p["width"])
-        if w and w != h:
-            f.setStretch(max(1, min(4000, int(round(100 * w / h)))))
+        w = int(self.p["width"]) or h
+        if self.p["font"] != ZEBRA0:
+            if w != h:
+                f.setStretch(max(1, min(4000, int(round(100 * w / h)))))
+            return f
+        # Sistem fontunu yazıcının 0 fontunun genişliğine ayarla. Stretch doğrusal
+        # değil (fontconfig başka bir yüz seçebilir), bu yüzden ölçerek yaklaş.
+        target = ZEBRA0_REF_WIDTH * w
+        stretch = 100.0
+        for _ in range(4):
+            adv = QFontMetricsF(f).horizontalAdvance(ZEBRA0_REF_TEXT)
+            if adv <= 0 or abs(adv - target) / target < 0.01:
+                break
+            stretch = max(1.0, min(4000.0, stretch * target / adv))
+            f.setStretch(int(round(stretch)))
         return f
 
     def _lines(self, text, fm, bw):
@@ -388,28 +405,43 @@ class TextItem(LabelItem):
         o = ROT_CODES[self.rot()]
         h = int(self.p["height"])
         w = int(self.p["width"]) or h
-        out = f"{self.fo()}^A0{o},{h},{w}"
+        font = f"^A0{o},{h},{w}"
+        fr = "^FR" if self.p["reverse"] else ""
+        x, y = int(self.p["x"]), int(self.p["y"])
         bw = int(self.p["block_width"])
-        multiline = "\n" in text
-        if bw or multiline:
-            if not bw:
-                # yazıcı fontu önizlemeden biraz geniş olabilir; pay bırak
-                bw = int(self.content_size()[0] * 1.15) + 8
-            nlines = max(len(text.split("\n")), 1) if not self.p["block_width"] else 99
-            out += f"^FB{bw},{nlines},0,{self.p['align']},0"
-            data = text.replace("\\", "\\\\").replace("\n", "\\&")
-            if any(c in data for c in "^~"):
-                data = "".join("_%02X" % ord(c) if c in "^~_" else c for c in data)
-                out += f"^FH_^FD{data}^FS"
-            else:
-                out += f"^FD{data}^FS"
+        align = self.p["align"]
+        lines = text.split("\n")
+
+        if not bw and len(lines) == 1:
+            return f"{self.fo()}{font}{fr}{Z.fd(text)}"
+
+        if not bw and self.rot() == 0 and align in ("L", "J"):
+            # Satırları ayrı alanlar olarak bas: yazıcı fontu önizlemeden geniş olsa
+            # bile satır kaydırma ve üst üste binme olmaz.
+            return "\n".join(f"^FO{x},{y + i * h}{font}{fr}{Z.fd(line)}"
+                             for i, line in enumerate(lines))
+
+        if bw:
+            # Kullanıcı paragrafı: yazıcı kaydırır; satır sınırı koyma (taşan metin
+            # ^FB'de son satırın üstüne basılır).
+            fo, maxlines = self.fo(), 99
         else:
-            if self.p["reverse"]:
-                out += "^FR"
-            return out + Z.fd(text)
-        if self.p["reverse"]:
-            out = out.replace("^FD", "^FR^FD", 1)
-        return out
+            # Ortalı / sağa yaslı ya da döndürülmüş çok satırlı metin: kutuyu genişlet ki
+            # yazıcı fontu sığsın, hizalama noktası (orta / sağ kenar) yerinde kalsın.
+            cw = self.content_size(ctx)[0]
+            if self.rot() == 0:
+                margin = min(x, max(200, cw // 2))
+                fo = f"^FO{x - margin},{y}"
+                bw = cw + (2 * margin if align == "C" else margin)
+            else:
+                fo, bw = self.fo(), cw * 2 + 100
+            maxlines = len(lines) + 5
+        data = text.replace("\\", "\\\\").replace("\n", "\\&")
+        fh = ""
+        if any(c in data for c in "^~"):
+            data = "".join("_%02X" % ord(c) if c in "^~_" else c for c in data)
+            fh = "^FH_"
+        return f"{fo}{font}^FB{bw},{maxlines},0,{align},0{fr}{fh}^FD{data}^FS"
 
 
 # ============================================================================ Barkod
