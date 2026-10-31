@@ -123,7 +123,7 @@ class DesignerWindow(QMainWindow):
         dock = QDockWidget(tr('Özellikler'), self)
         dock.setObjectName("props")
         dock.setWidget(self.props)
-        dock.setMinimumWidth(300)
+        dock.setMinimumWidth(220)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
         self.pos_label = QLabel()

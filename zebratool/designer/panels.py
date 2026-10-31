@@ -8,7 +8,7 @@ from PyQt6.QtGui import QImage, QFontDatabase
 from PyQt6.QtWidgets import (
     QWidget, QFormLayout, QSpinBox, QDoubleSpinBox, QLineEdit, QPlainTextEdit, QCheckBox, QComboBox,
     QLabel, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QDialog, QDialogButtonBox, QGroupBox,
-    QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QFontComboBox,
+    QMessageBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea, QFontComboBox,
 )
 
 from .. import printers as P
@@ -27,6 +27,8 @@ class PropertyPanel(QScrollArea):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
+        # içerik her zaman panel genişliğine sığsın; yatay kaydırma yok
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.item = None
         self.editors = {}
         self._updating = False
@@ -48,17 +50,35 @@ class PropertyPanel(QScrollArea):
             self._set_empty()
             return
         host = QWidget()
-        form = QFormLayout(host)
+        outer = QVBoxLayout(host)
+        form = QFormLayout()
+        outer.addLayout(form)
+        outer.addStretch(1)   # alanları üste topla, boşluğu alta bırak
+        # dar panelde etiketler alanın üstüne geçer
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        form.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         form.addRow(QLabel(f"<b>{item.TITLE}</b>"))
         self.editors = {}
         for key, label, kind, extra in item.fields():
             ed = self._make_editor(key, kind, extra)
             self.editors[key] = (ed, kind)
+            ed.setMinimumWidth(0)
+            ed.setSizePolicy(QSizePolicy.Policy.Ignored if kind in ("choice", "font") else QSizePolicy.Policy.Expanding,
+                             ed.sizePolicy().verticalPolicy())
+            if isinstance(ed, QComboBox):
+                ed.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+                ed.setMinimumContentsLength(6)
             if kind == "bool":
+                ed.setStyleSheet("QCheckBox { padding: 2px 0; }")
                 form.addRow(ed)
             else:
-                form.addRow(label + ":", ed)
+                lbl = QLabel(label + ":")
+                lbl.setWordWrap(True)
+                form.addRow(lbl, ed)
         self.mm_label = QLabel()
+        self.mm_label.setWordWrap(True)
         form.addRow(self.mm_label)
         self.setWidget(host)
         self.refresh()
